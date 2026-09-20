@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octopus Mosaic & Blur｜画像モザイク・ぼかしツール</title>
+    <title>Octopus Mosaic & Blur｜Octopus Tools</title>
     <!-- piexif.js（JPEGのExif維持用：同階層に配置） -->
     <script src="piexif.js"></script>
     <script>
     // アプリケーションのバージョン情報
     const APP_INFO = {
         name: "Octopus Mosaic & Blur",
-        version: "1.02",       // メインバージョン
-        subVersion: "102",     // 内部ビルド
+        version: "1.01",       // メインバージョン
+        subVersion: "9",       // 内部ビルド
         date: "2026-09-20"     // 更新日
-        // 更新内容： iOS環境（WebKit）におけるCanvas filter未対応に伴うぼかし・すりガラス不具合の修正（高速ガウシアンブラーエンジンの内製化）
+        // 更新内容： ヘッダー追加
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -218,138 +218,138 @@
             font-weight: 600; 
             color: var(--text-color); 
         }
-        .drop-area span { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-            display: block; 
-            margin-top: 6px; 
+        .drop-area span {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 6px;
         }
 
         /* 編集ワークスペース */
-        #workspace { 
-            display: none; 
-            margin-bottom: 24px; 
+        #workspace {
+            display: none;
+            margin-bottom: 24px;
         }
 
         /* アクションバー */
-        .action-bar { 
-            display: flex; 
-            flex-wrap: wrap; 
-            align-items: center; 
-            justify-content: space-between; 
-            gap: 10px; 
-            background: var(--card-bg-sub); 
-            padding: 10px 14px; 
-            border-radius: var(--radius-md); 
-            border: 1px solid var(--border-color); 
-            margin-bottom: 12px; 
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--card-bg-sub);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
         }
-        .action-group { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            flex-wrap: wrap; 
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
-        .sub-btn { 
-            background: var(--card-bg); 
-            border: 1px solid var(--border-color); 
-            color: var(--text-color); 
-            padding: 6px 12px; 
-            border-radius: var(--radius-sm); 
-            font-size: 13px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: var(--transition); 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 4px; 
+        .sub-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
-        .sub-btn:hover:not(:disabled) { 
-            border-color: var(--primary); 
-            color: var(--primary); 
-            background: var(--primary-light); 
+        .sub-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
         }
-        .sub-btn:disabled { 
-            opacity: 0.4; 
-            cursor: not-allowed; 
+        .sub-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
-        .confirm-btn { 
-            background: var(--primary); 
-            color: #ffffff; 
-            border-color: var(--primary); 
+        .confirm-btn {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
         }
-        .confirm-btn:hover:not(:disabled) { 
-            background: var(--primary-hover); 
-            color: #ffffff; 
+        .confirm-btn:hover:not(:disabled) {
+            background: var(--primary-hover);
+            color: #ffffff;
         }
 
         /* ズームコントローラー */
-        .zoom-control-group { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            background: var(--card-bg); 
-            padding: 4px 10px; 
-            border-radius: var(--radius-sm); 
-            border: 1px solid var(--border-color); 
+        .zoom-control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
         }
-        .zoom-label { 
-            font-size: 12px; 
-            font-weight: 700; 
-            color: var(--text-muted); 
-            min-width: 42px; 
-            text-align: right; 
+        .zoom-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 42px;
+            text-align: right;
         }
-        .zoom-slider { 
-            width: 90px; 
-            cursor: pointer; 
-            accent-color: var(--primary); 
+        .zoom-slider {
+            width: 90px;
+            cursor: pointer;
+            accent-color: var(--primary);
         }
 
         /* キャンバスラッパー＆スクロールコンテナ */
-        .canvas-container { 
-            position: relative; 
-            width: 100%; 
-            max-height: 75vh; 
-            background: #151814; 
-            border-radius: var(--radius-md); 
-            border: 1px solid var(--border-color); 
-            overflow: auto; 
-            text-align: center; 
-            touch-action: none; 
-            box-shadow: inset 0 0 12px rgba(0,0,0,0.5); 
-            padding: 12px; 
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-height: 75vh;
+            background: #151814;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            overflow: auto;
+            text-align: center;
+            touch-action: none;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+            padding: 12px;
         }
         
-        .canvas-wrapper { 
-            position: relative; 
-            display: inline-block; 
-            vertical-align: middle; 
-            margin: auto; 
-            user-select: none; 
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+            margin: auto;
+            user-select: none;
         }
 
-        #main-canvas { 
-            display: block; 
-            cursor: crosshair; 
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4); 
-            border-radius: 4px; 
-            background-color: #fff; 
-            transform-origin: top left; 
+        #main-canvas {
+            display: block;
+            cursor: crosshair;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            background-color: #fff;
+            transform-origin: top left;
         }
 
         /* 選択枠オーバーレイ */
-        #selection-box { 
-            position: absolute; 
-            border: 2px dashed #ffffff; 
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(0,0,0,0.8); 
-            display: none; 
-            pointer-events: none; 
-            box-sizing: border-box; 
-            z-index: 10; 
+        #selection-box {
+            position: absolute;
+            border: 2px dashed #ffffff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(0,0,0,0.8);
+            display: none;
+            pointer-events: none;
+            box-sizing: border-box;
+            z-index: 10;
         }
-        #selection-box.ellipse { 
-            border-radius: 50%; 
+        #selection-box.ellipse {
+            border-radius: 50%;
         }
 
         /* アコーディオン */
@@ -397,111 +397,111 @@
         }
 
         /* セグメントピッカー */
-        .setting-group-title { 
+        .setting-group-title {
             font-size: 13px; 
             font-weight: 600; 
-            color: var(--text-muted); 
-            margin-bottom: 8px; 
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }
-        .segmented-picker { 
-            display: flex; 
-            gap: 10px; 
-            flex-wrap: wrap; 
-            margin-bottom: 18px; 
+        .segmented-picker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
         }
-        .picker-option { 
-            cursor: pointer; 
-            user-select: none; 
-            flex: 1; 
-            min-width: 110px; 
+        .picker-option {
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+            min-width: 110px;
         }
-        .picker-option input[type="radio"] { 
-            display: none; 
+        .picker-option input[type="radio"] {
+            display: none;
         }
-        .picker-label { 
-            display: block; 
-            padding: 9px 12px; 
-            border: 1px solid var(--border-color); 
-            border-radius: var(--radius-sm); 
-            background: var(--card-bg-sub); 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: var(--text-color); 
-            transition: var(--transition); 
-            text-align: center; 
+        .picker-label {
+            display: block;
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg-sub);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: var(--transition);
+            text-align: center;
         }
-        .picker-option:hover .picker-label { 
-            border-color: var(--primary); 
-            background: var(--primary-light); 
+        .picker-option:hover .picker-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
         }
-        .picker-option input[type="radio"]:checked + .picker-label { 
-            border-color: var(--primary); 
-            background: var(--primary-light); 
-            color: var(--primary); 
-            box-shadow: 0 0 0 2px var(--primary); 
+        .picker-option input[type="radio"]:checked + .picker-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
         }
 
         /* スライダーフォーム */
-        .slider-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 16px; 
-            margin-top: 12px; 
+        .slider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
         }
-        .slider-group { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            transition: opacity 0.2s ease; 
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: opacity 0.2s ease;
         }
-        .slider-group.is-disabled { 
-            opacity: 0.35; 
-            cursor: not-allowed; 
+        .slider-group.is-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
-        .slider-group.is-disabled input[type="range"] { 
-            cursor: not-allowed; 
-            accent-color: #888888; 
+        .slider-group.is-disabled input[type="range"] {
+            cursor: not-allowed;
+            accent-color: #888888;
         }
-        .slider-group.is-disabled .slider-value { 
-            color: var(--text-muted); 
+        .slider-group.is-disabled .slider-value {
+            color: var(--text-muted);
         }
 
-        .slider-header { 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: var(--text-muted); 
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
         }
-        .slider-value { 
-            font-weight: 700; 
-            color: var(--primary); 
-            transition: color 0.2s ease; 
+        .slider-value {
+            font-weight: 700;
+            color: var(--primary);
+            transition: color 0.2s ease;
         }
-        input[type="range"] { 
-            width: 100%; 
-            accent-color: var(--primary); 
-            cursor: pointer; 
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
         }
 
         /* 設定リセットボタン */
-        .reset-preset-btn { 
-            background: transparent; 
-            border: 1px dashed var(--border-color); 
-            color: var(--text-muted); 
-            font-size: 12px; 
-            padding: 6px 14px; 
-            border-radius: var(--radius-sm); 
-            cursor: pointer; 
-            transition: var(--transition); 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px; 
+        .reset-preset-btn {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .reset-preset-btn:hover { 
-            color: var(--danger-color); 
-            border-color: var(--danger-color); 
-            background: rgba(201, 74, 74, 0.05); 
+        .reset-preset-btn:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+            background: rgba(201, 74, 74, 0.05);
         }
 
         /* メインアクションボタン */
@@ -541,10 +541,10 @@
             border: 1px solid var(--border-color); 
             box-shadow: var(--shadow-sm); 
             line-height: 1.7; 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .container.wide-mode ~ .explanation { 
-            max-width: 2000px; 
+        .container.wide-mode ~ .explanation {
+            max-width: 2000px;
         }
 
         .usage-section h3 { 
@@ -594,6 +594,55 @@
             font-weight: 700; 
             color: var(--text-color); 
         }
+
+/* 共通グローバルナビゲーション */
+        .global-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* スクロールバーの非表示（SPでの見た目をすっきり保つ） */
+        .global-nav::-webkit-scrollbar {
+            display: none;
+        }
+        .global-nav {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .nav-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            text-decoration: none;
+            transition: var(--transition);
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .nav-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        /* 現在表示しているページのアクティブ表示 */
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
@@ -610,6 +659,13 @@
             <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
         </div>
     </div>
+
+    <!-- 共通ナビゲーション -->
+    <nav class="global-nav" aria-label="ツール切り替え">
+        <a href="index.html" class="nav-item"><span>🐙</span> TOP</a>
+        <a href="ExifFrame.html" class="nav-item"><span>📷</span> EXIF Frame</a>
+        <a href="MosaicBlur.html" class="nav-item active"><span>🧩</span> Mosaic & Blur</a>
+    </nav>
 
     <!-- アップロードエリア -->
     <div class="drop-area" id="drop-area">
@@ -779,7 +835,7 @@
         <h3> ライセンスについて</h3>
         <p>・本ツールでは、画像の処理やEXIF情報の処理のためにjsフレームワークを利用しています。著作権およびライセンスは、それぞれの権利者に帰属します。</p>
         <ul>
-            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)[cite: 1]</li>
+            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)</li>
         </ul>
     </div>
 </div>
@@ -1238,97 +1294,6 @@ window.addEventListener('resize', () => {
     redrawCanvas();
 });
 
-// --- 高速ガウシアンブラー処理 (WebKit / iOS Canvas filter未対応対策) ---
-function applyFastBlur(ctx, width, height, radius) {
-    if (radius <= 0 || width <= 0 || height <= 0) return;
-    
-    // CSS filter blur(R) に近いボケ足となるようボックス半径を計算
-    const r = Math.max(1, Math.round(radius * 0.65));
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const data = imgData.data;
-    const target = new Uint8ClampedArray(data.length);
-    
-    // 3パスのボックスブラー（水平・垂直を3回反復してガウス分布に近似）
-    for (let pass = 0; pass < 3; pass++) {
-        boxBlurH(data, target, width, height, r);
-        boxBlurV(target, data, width, height, r);
-    }
-    
-    ctx.putImageData(imgData, 0, 0);
-}
-
-function boxBlurH(src, dest, w, h, r) {
-    const iarr = 1 / (r + r + 1);
-    for (let y = 0; y < h; y++) {
-        const rowStart = y * w * 4;
-        let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
-        
-        for (let i = -r; i <= r; i++) {
-            const ix = Math.min(Math.max(i, 0), w - 1);
-            const idx = rowStart + ix * 4;
-            rSum += src[idx];
-            gSum += src[idx + 1];
-            bSum += src[idx + 2];
-            aSum += src[idx + 3];
-        }
-        
-        for (let x = 0; x < w; x++) {
-            const outIdx = rowStart + x * 4;
-            dest[outIdx] = rSum * iarr;
-            dest[outIdx + 1] = gSum * iarr;
-            dest[outIdx + 2] = bSum * iarr;
-            dest[outIdx + 3] = aSum * iarr;
-            
-            const nextX = Math.min(x + r + 1, w - 1);
-            const prevX = Math.max(x - r, 0);
-            
-            const nextIdx = rowStart + nextX * 4;
-            const prevIdx = rowStart + prevX * 4;
-            
-            rSum += src[nextIdx] - src[prevIdx];
-            gSum += src[nextIdx + 1] - src[prevIdx + 1];
-            bSum += src[nextIdx + 2] - src[prevIdx + 2];
-            aSum += src[nextIdx + 3] - src[prevIdx + 3];
-        }
-    }
-}
-
-function boxBlurV(src, dest, w, h, r) {
-    const iarr = 1 / (r + r + 1);
-    for (let x = 0; x < w; x++) {
-        const colStart = x * 4;
-        let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
-        
-        for (let i = -r; i <= r; i++) {
-            const iy = Math.min(Math.max(i, 0), h - 1);
-            const idx = iy * w * 4 + colStart;
-            rSum += src[idx];
-            gSum += src[idx + 1];
-            bSum += src[idx + 2];
-            aSum += src[idx + 3];
-        }
-        
-        for (let y = 0; y < h; y++) {
-            const outIdx = y * w * 4 + colStart;
-            dest[outIdx] = rSum * iarr;
-            dest[outIdx + 1] = gSum * iarr;
-            dest[outIdx + 2] = bSum * iarr;
-            dest[outIdx + 3] = aSum * iarr;
-            
-            const nextY = Math.min(y + r + 1, h - 1);
-            const prevY = Math.max(y - r, 0);
-            
-            const nextIdx = nextY * w * 4 + colStart;
-            const prevIdx = prevY * w * 4 + colStart;
-            
-            rSum += src[nextIdx] - src[prevIdx];
-            gSum += src[nextIdx + 1] - src[prevIdx + 1];
-            bSum += src[nextIdx + 2] - src[prevIdx + 2];
-            aSum += src[nextIdx + 3] - src[prevIdx + 3];
-        }
-    }
-}
-
 // --- 再描画エンジン ---
 function redrawCanvas() {
     if (!originalImage) return;
@@ -1371,7 +1336,6 @@ function applyEffectToCanvas(targetCtx, item, scale) {
     offCanvas.height = rh;
     const offCtx = offCanvas.getContext('2d');
 
-    // 1. モザイク処理
     if (item.effect === 'mosaic' || item.effect === 'frosted') {
         const blk = Math.max(2, Math.round(baseDimension * (item.blockPercent / 100)));
         const smallW = Math.max(1, Math.floor(rw / blk));
@@ -1387,14 +1351,21 @@ function applyEffectToCanvas(targetCtx, item, scale) {
         offCtx.imageSmoothingEnabled = false;
         offCtx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, rw, rh);
     } else {
-        // ぼかし単体の場合は現況をそのまま切り抜き転写
         offCtx.drawImage(targetCtx.canvas, rx, ry, rw, rh, 0, 0, rw, rh);
     }
 
-    // 2. ぼかし処理（内製ガウシアンブラーでWebKitでも100%確実に動作）
     if ((item.effect === 'blur' || item.effect === 'frosted') && item.blurPercent > 0) {
         const blurPx = Math.max(1, Math.round(baseDimension * (item.blurPercent / 100)));
-        applyFastBlur(offCtx, rw, rh, blurPx);
+        const blurCanvas = document.createElement('canvas');
+        blurCanvas.width = rw;
+        blurCanvas.height = rh;
+        const bCtx = blurCanvas.getContext('2d');
+
+        bCtx.filter = `blur(${blurPx}px)`;
+        bCtx.drawImage(offCanvas, 0, 0);
+
+        offCtx.clearRect(0, 0, rw, rh);
+        offCtx.drawImage(blurCanvas, 0, 0);
     }
 
     targetCtx.drawImage(offCanvas, rx, ry);
