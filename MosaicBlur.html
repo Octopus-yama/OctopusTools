@@ -10,10 +10,10 @@
     // アプリケーションのバージョン情報
     const APP_INFO = {
         name: "Octopus Mosaic & Blur",
-        version: "1.00",       // メインバージョン
-        subVersion: "8",       // 内部ビルド
+        version: "1.01",       // メインバージョン
+        subVersion: "9",       // 内部ビルド
         date: "2026-09-20"     // 更新日
-        // 更新内容： バージョンの更新
+        // 更新内容： ヘッダー追加
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -594,6 +594,55 @@
             font-weight: 700; 
             color: var(--text-color); 
         }
+
+/* 共通グローバルナビゲーション */
+        .global-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* スクロールバーの非表示（SPでの見た目をすっきり保つ） */
+        .global-nav::-webkit-scrollbar {
+            display: none;
+        }
+        .global-nav {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .nav-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            text-decoration: none;
+            transition: var(--transition);
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .nav-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        /* 現在表示しているページのアクティブ表示 */
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
@@ -602,7 +651,7 @@
     <div class="header">
         <h1>
             <span class="header-icon">🧩</span>
-            Octopus Mosaic & Blur｜Octopus Tools
+            Octopus Mosaic & Blur
         </h1>
         <div class="header-controls">
             <span class="version" id="version-display"></span>
@@ -610,6 +659,13 @@
             <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
         </div>
     </div>
+
+    <!-- 共通ナビゲーション -->
+    <nav class="global-nav" aria-label="ツール切り替え">
+        <a href="index.html" class="nav-item"><span>🐙</span> TOP</a>
+        <a href="ExifFrame.html" class="nav-item"><span>📷</span> EXIF Frame</a>
+        <a href="MosaicBlur.html" class="nav-item active"><span>🧩</span> Mosaic & Blur</a>
+    </nav>
 
     <!-- アップロードエリア -->
     <div class="drop-area" id="drop-area">
