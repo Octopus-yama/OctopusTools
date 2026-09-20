@@ -1,0 +1,3045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus EXIF Frame｜Octopus Tools</title>
+    <link rel="icon" href="img/Exif_Frame_Tool_icon.ico" type="image/png">
+    <meta name="description" content="写真をシンプルなEXIFフレーム画像に加工するwebツール。複数枚の写真にも対応。" />
+    <script src="full.umd.js"></script>
+    <script src="piexif.min.js"></script>
+    <script src="piexif.js"></script>
+    <script>
+    // アプリケーションのバージョン情報
+    const APP_INFO = {
+        version: "1.00",       // メインバージョン（画面表示用）
+        subVersion: "120",     // サブバージョン（内部ビルド番号）
+        date: "2026-09-20"     // 最終更新日
+        // 更新内容： バージョン変更
+    };
+
+    // DOM読み込み完了時にバージョン表示を自動反映
+    document.addEventListener('DOMContentLoaded', () => {
+        const versionEl = document.getElementById('version-display');
+        if (versionEl) {
+            versionEl.textContent = `v${APP_INFO.version}`;
+        }
+    });
+    </script>
+
+    <style>
+        :root {
+            /* メインカラー：アース黄緑 (Sage / Olive Green) */
+            --primary: #607d3b;
+            --primary-hover: #4f682f;
+            --primary-light: #f2f6ec;
+            --primary-border: #c4d7b3;
+            --primary-glow: rgba(96, 125, 59, 0.2);
+
+            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
+            --accent: #542366;
+            --accent-hover: #411a50;
+            --accent-light: #f7effa;
+            --accent-border: #dbc3e3;
+
+            /* ニュートラル・サーフェス */
+            --bg-color: #f7f8f5;
+            --card-bg: #ffffff;
+            --card-bg-sub: #f3f5f0;
+            --text-color: #2b3324;
+            --text-muted: #64705a;
+            --border-color: #e0e6d8;
+            --border-hover: #b8c8a8;
+            
+            --danger-color: #c94a4a;
+            --danger-hover: #ab3737;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
+            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
+            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ダークモード設定 */
+        [data-theme="dark"] {
+            --primary: #86ad58;
+            --primary-hover: #9bc36c;
+            --primary-light: #252e1f;
+            --primary-border: #3d4a32;
+            --primary-glow: rgba(134, 173, 88, 0.25);
+
+            --accent: #bd79d9;
+            --accent-hover: #cb90e3;
+            --accent-light: #321d38;
+            --accent-border: #573361;
+
+            --bg-color: #1e221b;
+            --card-bg: #282d24;
+            --card-bg-sub: #21251e;
+            --text-color: #ecf0e6;
+            --text-muted: #a3b098;
+            --border-color: #373f32;
+            --border-hover: #4d5746;
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* テンプレートごとの表示切替 */
+        body[data-template-type="side-2"] .only-standard { display: none !important; }
+        body:not([data-template-type="side-2"]) .only-side-2 { display: none !important; }
+
+        @font-face { font-family: 'Noto Sans JP'; src: url('font/NotoSansJP-VariableFont_wght.ttf') format('truetype'); }
+        @font-face { font-family: 'Google Sans Flex'; src: url('font/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype'); }
+        @font-face { font-family: 'IBM Plex Sans JP'; src: url('font/IBMPlexSansJP-Regular.ttf') format('truetype'); }
+        @font-face { font-family: 'ZEN 角ゴシック New'; src: url('font/ZenKakuGothicNew-Regular.ttf') format('truetype'); }
+        @font-face { font-family: 'さわらびゴシック'; src: url('font/SawarabiGothic-Regular.ttf') format('truetype'); }
+        @font-face { font-family: 'クレー One'; src: url('font/KleeOne-Regular.ttf') format('truetype'); }
+        @font-face { font-family: '小杉丸'; src: url('font/KosugiMaru-Regular.ttf') format('truetype'); }
+        @font-face { font-family: '佑字 朴'; src: url('font/YujiMai-Regular.ttf') format('truetype'); }
+        @font-face { font-family: 'Cherry Bomb'; src: url('font/CherryBombOne-Regular.ttf') format('truetype'); }
+        @font-face { font-family: 'はちまるポップ'; src: url('font/HachiMaruPop-Regular.ttf') format('truetype'); }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 32px 16px; min-height: 100vh; transition: background-color 0.3s, color 0.3s; line-height: 1.6; }
+        
+        .container { 
+            max-width: 840px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            padding: 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-md); 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 14px; 
+            margin-bottom: 24px; 
+            border-bottom: 2px solid var(--border-color); 
+            padding-bottom: 16px; 
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            letter-spacing: -0.01em; 
+            display: flex;
+            align-items: center;
+        }
+        .header h1 img {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            margin-right: 8px;
+        }
+        .version { 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: var(--primary); 
+            background: var(--primary-light); 
+            border: 1px solid var(--primary-border); 
+            padding: 2px 10px; 
+            border-radius: 20px; 
+            margin-left: auto; 
+        }
+        
+        .theme-toggle { 
+            cursor: pointer; 
+            background: var(--card-bg-sub); 
+            color: var(--text-color); 
+            border: 1px solid var(--border-color); 
+            padding: 6px 12px; 
+            border-radius: var(--radius-sm); 
+            font-size: 14px; 
+            transition: var(--transition); 
+        }
+        .theme-toggle:hover { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+        }
+
+        .drop-area { 
+            border: 2px dashed var(--primary-border); 
+            border-radius: var(--radius-md); 
+            padding: 36px 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            background: var(--primary-light); 
+            margin-bottom: 24px; 
+            transition: var(--transition); 
+        }
+        .drop-area:hover { 
+            border-color: var(--primary); 
+            background: var(--card-bg-sub); 
+            transform: translateY(-2px); 
+            box-shadow: var(--shadow-sm); 
+        }
+        .drop-area p { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-color); 
+        }
+
+        .file-list { 
+            margin-top: 18px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
+            gap: 12px; 
+            text-align: left; 
+        }
+        .file-item { 
+            position: relative; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            padding: 6px; 
+            text-align: center; 
+            font-size: 11px; 
+            box-shadow: var(--shadow-sm); 
+            transition: var(--transition); 
+        }
+        .file-item:hover { 
+            border-color: var(--primary); 
+        }
+        .file-item img { 
+            width: 100%; 
+            height: 70px; 
+            object-fit: cover; 
+            border-radius: 4px; 
+            display: block; 
+            margin: 0 auto 6px; 
+            background: var(--card-bg-sub); 
+        }
+        .file-item .file-name { 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+            color: var(--text-muted); 
+            font-weight: 500; 
+        }
+        .clear-btn { 
+            position: absolute; 
+            top: -6px; 
+            right: -6px; 
+            background: var(--danger-color); 
+            color: #fff; 
+            border: 2px solid var(--card-bg); 
+            border-radius: 50%; 
+            width: 22px; 
+            height: 22px; 
+            font-size: 13px; 
+            cursor: pointer; 
+            line-height: 18px; 
+            padding: 0; 
+            text-align: center; 
+            font-weight: bold; 
+            transition: var(--transition); 
+        }
+        .clear-btn:hover { 
+            background: var(--danger-hover); 
+            transform: scale(1.1); 
+        }
+        
+        .clear-all-btn { 
+            display: none; 
+            margin-top: 14px; 
+            background: var(--danger-color); 
+            color: #fff; 
+            border: none; 
+            padding: 10px 18px; 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: 600; 
+            font-size: 13px; 
+            transition: var(--transition); 
+        }
+        .clear-all-btn:hover { 
+            background: var(--danger-hover); 
+            transform: translateY(-1px); 
+        }
+
+        .accordion { 
+            margin-bottom: 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-md); 
+            overflow: hidden; 
+            background: var(--card-bg); 
+            transition: var(--transition); 
+        }
+        .accordion:hover { 
+            border-color: var(--border-hover); 
+        }
+        .accordion-header { 
+            background: var(--card-bg-sub); 
+            padding: 14px 18px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 14px; 
+            color: var(--text-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            user-select: none; 
+            transition: var(--transition); 
+        }
+        .accordion-header:hover { 
+            background: var(--primary-light); 
+            color: var(--primary); 
+        }
+        .accordion-header span { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+            transition: var(--transition); 
+        }
+        .accordion-content { 
+            padding: 20px; 
+            display: none; 
+            background: var(--card-bg); 
+            border-top: 1px solid var(--border-color); 
+        }
+        .accordion-content.open { 
+            display: block; 
+        }
+
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+            gap: 16px; 
+        }
+        .form-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+        }
+        label { 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+        }
+        input[type="number"], input[type="text"], textarea, select { 
+            width: 100%; 
+            padding: 9px 12px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            background: var(--bg-color); 
+            color: var(--text-color); 
+            font-size: 14px; 
+            outline: none; 
+            transition: var(--transition); 
+            font-family: inherit;
+        }
+        input[type="number"]:focus, input[type="text"]:focus, textarea:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px var(--primary-glow); 
+            background: var(--card-bg); 
+        }
+        
+        .color-picker { 
+            display: flex; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+            padding: 4px 0; 
+        }
+        .color-option { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 14px; 
+            color: var(--text-color); 
+        }
+        .color-option input[type="radio"] { 
+            display: none; 
+        }
+        .color-swatch { 
+            width: 30px; 
+            height: 30px; 
+            border-radius: 50%; 
+            border: 2px solid var(--border-color); 
+            display: inline-block; 
+            transition: var(--transition); 
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); 
+        }
+        .color-option input[type="radio"]:checked + .color-swatch { 
+            transform: scale(1.15); 
+            box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--primary); 
+            border-color: transparent; 
+        }
+
+        .template-picker {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .template-option {
+            cursor: pointer;
+            user-select: none;
+        }
+        .template-option input[type="radio"] {
+            display: none;
+        }
+        .template-label {
+            display: block;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg-sub);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: var(--transition);
+            text-align: center;
+        }
+        .template-option:hover .template-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .template-option input[type="radio"]:checked + .template-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .font-picker { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+        .font-option-container { 
+            cursor: pointer; 
+            user-select: none; 
+        }
+        .font-radio { 
+            display: none; 
+        }
+        .font-label { 
+            display: block; 
+            padding: 10px 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            background: var(--card-bg-sub); 
+            transition: var(--transition); 
+            font-size: 14px; 
+            text-align: center; 
+            color: var(--text-color); 
+        }
+        .font-option-container:hover .font-label { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+        }
+        .font-radio:checked + .font-label { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+            color: var(--primary); 
+            font-weight: bold; 
+            box-shadow: 0 0 0 2px var(--primary); 
+        }
+
+        .override-row { 
+            display: grid; 
+            grid-template-columns: 100px 24px 1fr 50px; 
+            grid-template-areas: "label chk input copy";
+            align-items: center; 
+            gap: 12px; 
+            margin-top: 10px; 
+        }
+        .override-row label { 
+            grid-area: label;
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            margin: 0; 
+        }
+        .override-row input[type="checkbox"] { 
+            grid-area: chk;
+            width: 18px; 
+            height: 18px; 
+            cursor: pointer; 
+            accent-color: var(--primary); 
+            margin: 0 auto; 
+        }
+        .override-row textarea.override-val { 
+            grid-area: input;
+            padding: 7px 10px; 
+            font-size: 13px; 
+            resize: vertical;
+            min-height: 36px;
+            line-height: 1.5;
+        }
+        .override-row .copy-btn {
+            grid-area: copy;
+        }
+        .override-row textarea:disabled { 
+            opacity: 0.45; 
+            cursor: not-allowed; 
+            background: var(--card-bg-sub); 
+        }
+
+        .override-bulk-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .bulk-check-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bulk-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .bulk-btn {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .bulk-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }
+        .bulk-btn-copy {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }
+
+        /* スマホ向けレスポンシブレイアウト */
+        @media (max-width: 600px) {
+            .override-row {
+                grid-template-columns: 1fr 24px 50px;
+                grid-template-areas: 
+                    "label chk copy"
+                    "input input input";
+                row-gap: 8px;
+                column-gap: 12px;
+            }
+            .override-bulk-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .bulk-check-group {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+            .bulk-copy-group {
+                display: flex;
+                flex-direction: column;
+            }
+            .bulk-btn-copy {
+                width: 100%;
+                padding: 10px;
+                font-size: 13px;
+            }
+        }
+
+        .copy-btn {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            text-align: center;
+        }
+        .copy-btn:hover:not(:disabled) {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }
+        .copy-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        /* ドラッグ＆ドロップ並び替えUI */
+        .drag-zone-group {
+            margin-top: 14px;
+        }
+        .drag-zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .drag-zone-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .drag-zone-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+            padding: 1px 8px;
+            border-radius: 12px;
+        }
+        .drag-container {
+            min-height: 52px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--card-bg-sub);
+            transition: var(--transition);
+        }
+        .drag-container.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+        .drag-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: grab;
+            user-select: none;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s, border-color 0.15s;
+            touch-action: none;
+        }
+        .drag-item:active {
+            cursor: grabbing;
+        }
+        .drag-item.dragging {
+            opacity: 0.45;
+            border-color: var(--primary);
+            transform: scale(0.96);
+        }
+        .drag-handle {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1;
+            letter-spacing: -2px;
+            cursor: grab;
+        }
+        .drag-item input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            margin: 0;
+        }
+        .drag-nav-btns {
+            display: inline-flex;
+            gap: 2px;
+            margin-left: 2px;
+        }
+        .drag-nav-btn {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            color: var(--text-muted);
+            font-size: 10px;
+            padding: 2px 5px;
+            cursor: pointer;
+            line-height: 1;
+            transition: var(--transition);
+        }
+        .drag-nav-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary-border);
+            background: var(--primary-light);
+        }
+        .reset-order-btn {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-order-btn:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+            background: rgba(201, 74, 74, 0.05);
+        }
+
+        .main-btn { 
+            background: var(--primary); 
+            color: #ffffff; 
+            border: none; 
+            padding: 15px 24px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            border-radius: var(--radius-md); 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 20px; 
+            transition: var(--transition); 
+            box-shadow: 0 4px 12px var(--primary-glow); 
+            letter-spacing: 0.02em; 
+        }
+        .main-btn:hover { 
+            background: var(--primary-hover); 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 18px var(--primary-glow); 
+        }
+        .main-btn:disabled { 
+            background: #999999; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+        }
+
+        /* 一括ダウンロードボタン（アクセント：濃い紫） */
+        #download-btn { 
+            background: var(--accent) !important; 
+            box-shadow: 0 4px 14px rgba(84, 35, 102, 0.25) !important; 
+        }
+        #download-btn:hover { 
+            background: var(--accent-hover) !important; 
+            box-shadow: 0 6px 20px rgba(84, 35, 102, 0.35) !important; 
+        }
+
+        .result-area { 
+            margin-top: 32px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 16px; 
+            justify-content: center; 
+        }
+        .result-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 10px; 
+            background: var(--card-bg-sub); 
+            border: 1px solid var(--border-color); 
+            padding: 12px; 
+            border-radius: var(--radius-md); 
+            box-shadow: var(--shadow-sm); 
+            transition: var(--transition); 
+        }
+        .result-item:hover { 
+            transform: translateY(-3px); 
+            border-color: var(--primary-border); 
+            box-shadow: var(--shadow-md); 
+        }
+        .result-thumb { 
+            width: 100%; 
+            max-width: 140px; 
+            aspect-ratio: 1; 
+            object-fit: contain; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            background: var(--card-bg); 
+        }
+        .result-thumb:hover { 
+            transform: scale(1.04); 
+        }
+        
+        .single-download-btn { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 7px 14px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            transition: var(--transition); 
+            width: 100%; 
+        }
+        .single-download-btn:hover { 
+            background: var(--primary-hover); 
+        }
+
+        #lightbox-modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.88); 
+            z-index: 10000; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            backdrop-filter: blur(4px); 
+        }
+        #lightbox-img { 
+            max-width: 92vw; 
+            max-height: 88vh; 
+            border-radius: var(--radius-sm); 
+            object-fit: contain; 
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5); 
+            /* iOS向け：長押しで保存しやすくするためのプロパティ */
+            -webkit-touch-callout: default;
+        }
+        #lightbox-close { 
+            position: absolute; 
+            top: 20px; 
+            right: 30px; 
+            color: #ffffff; 
+            font-size: 38px; 
+            cursor: pointer; 
+            user-select: none; 
+            transition: transform 0.2s; 
+            z-index: 10002;
+        }
+        #lightbox-close:hover { 
+            transform: scale(1.2); 
+        }
+
+
+        /* 矢印ナビゲーション */
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            font-size: 28px;
+            width: 48px;
+            height: 64px;
+            cursor: pointer;
+            z-index: 10001;
+            border-radius: var(--radius-sm);
+            transition: background 0.2s, transform 0.2s;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        .lightbox-nav:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        #lightbox-prev {
+            left: 20px;
+        }
+        #lightbox-next {
+            right: 20px;
+        }
+
+        /* スマホ環境（タッチメイン）では矢印を非表示にしスワイプを促す */
+        @media (max-width: 768px) {
+            .lightbox-nav {
+                display: none !important;
+            }
+        }
+
+        .explanation { 
+            max-width: 840px; 
+            margin: 28px auto 0; 
+            background: var(--card-bg); 
+            padding: 28px 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-sm); 
+            line-height: 1.7; 
+        }
+        .usage-section h3 { 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            border-left: 4px solid var(--primary); 
+            padding-left: 10px; 
+            margin: 22px 0 10px 0; 
+            letter-spacing: 0.01em; 
+        }
+        .usage-section h3:first-child { 
+            margin-top: 0; 
+        }
+        .usage-section p { 
+            font-size: 13.5px; 
+            color: var(--text-muted); 
+            margin: 0 0 10px 0; 
+            padding-left: 1.2em; 
+            text-indent: -1.2em; 
+        } 
+        .usage-section ul { 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            margin-top: 6px; 
+            padding-left: 2.2em; 
+            line-height: 1.85; 
+        }
+        .usage-section a { 
+            color: var(--primary); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: var(--transition); 
+        }
+        .usage-section a:hover { 
+            color: var(--accent); 
+            text-decoration: underline; 
+        }
+
+        .footer { 
+            text-align: center; 
+            padding: 28px 10px 36px; 
+            color: var(--text-muted); 
+            font-size: 12px; 
+        }
+        .copyright-name { 
+            font-weight: 700; 
+            color: var(--text-color); 
+        }
+    </style>
+</head>
+<body>
+
+<div id="lightbox-modal">
+    <span id="lightbox-close">&times;</span>
+    <button id="lightbox-prev" class="lightbox-nav">&#10094;</button>
+    <img id="lightbox-img" src="" alt="拡大プレビュー">
+    <button id="lightbox-next" class="lightbox-nav">&#10095;</button>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>
+            <img src="img/Exif_Frame_Tool_icon.png" alt="アプリのアイコン">
+            Octopus EXIF Frame｜Octopus Tools
+        </h1>
+        <span class="version" id="version-display"></span>
+        <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
+    </div>
+
+    <div class="drop-area" id="drop-area">
+        <p>ここをタップするか、画像ファイルをドラッグ＆ドロップして追加（最大20枚）</p>
+        <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" multiple style="display: none;">
+        
+        <div class="file-list" id="file-list">
+            <!-- 選択された画像のサムネイルがここに追加されます -->
+        </div>
+        <button id="clear-all-btn" class="clear-all-btn">すべてのファイルをクリア</button>
+    </div>
+
+    <!-- 1. EXIF情報の確認・修正 -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-exif', this)">
+            EXIF情報の確認・修正 <span>▼</span>
+        </div>
+        <div class="accordion-content open" id="content-exif">
+            <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 16px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color);">
+                    <input type="checkbox" id="exif-embed-chk" checked style="width: 16px; height: 16px; accent-color: var(--primary);"> EXIF情報を生成する写真に書き込む
+                </label>
+            </div>
+
+            <!-- 読み取ったEXIF情報の表示エリア -->
+            <div id="extracted-exif-display" style="margin-bottom: 15px; font-size: 13px; background: var(--card-bg-sub); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); max-height: 250px; overflow-y: auto;">
+                <div style="color: var(--text-muted); text-align: center;">画像が選択されていません。</div>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color);">
+                    <input type="checkbox" id="ov-main-chk" style="width: 16px; height: 16px; accent-color: var(--primary);"> EXIF情報強制上書きモードをONにする
+                </label>
+            </div>
+            
+            <div id="override-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); display: none;">
+                <div style="text-align: right; margin-bottom: 8px; font-size: 12px; font-weight: bold; color: var(--primary); padding-right: 5px;">写真1の情報をコピーする ↓</div>
+                <!-- カメラモデル -->
+                <div class="override-row">
+                    <label>カメラモデル</label>
+                    <input type="checkbox" id="ov-model-chk" disabled>
+                    <textarea id="ov-model-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-model-copy" onclick="copyExifToOverride('model')" disabled>コピー</button>
+                </div>
+                <!-- カメラメーカー -->
+                <div class="override-row">
+                    <label>カメラメーカー</label>
+                    <input type="checkbox" id="ov-make-chk" disabled>
+                    <textarea id="ov-make-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-make-copy" onclick="copyExifToOverride('make')" disabled>コピー</button>
+                </div>
+                <!-- レンズモデル -->
+                <div class="override-row">
+                    <label>レンズモデル</label>
+                    <input type="checkbox" id="ov-lens-chk" disabled>
+                    <textarea id="ov-lens-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-lens-copy" onclick="copyExifToOverride('lens')" disabled>コピー</button>
+                </div>
+                <!-- 焦点距離 -->
+                <div class="override-row">
+                    <label>焦点距離</label>
+                    <input type="checkbox" id="ov-focal-chk" disabled>
+                    <textarea id="ov-focal-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-focal-copy" onclick="copyExifToOverride('focal')" disabled>コピー</button>
+                </div>
+                <!-- F値 -->
+                <div class="override-row">
+                    <label>F値</label>
+                    <input type="checkbox" id="ov-fnum-chk" disabled>
+                    <textarea id="ov-fnum-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-fnum-copy" onclick="copyExifToOverride('fnum')" disabled>コピー</button>
+                </div>
+                <!-- 露出時間 -->
+                <div class="override-row">
+                    <label>露出時間</label>
+                    <input type="checkbox" id="ov-exp-chk" disabled>
+                    <textarea id="ov-exp-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-exp-copy" onclick="copyExifToOverride('exp')" disabled>コピー</button>
+                </div>
+                <!-- ISO感度 -->
+                <div class="override-row">
+                    <label>ISO感度</label>
+                    <input type="checkbox" id="ov-iso-chk" disabled>
+                    <textarea id="ov-iso-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-iso-copy" onclick="copyExifToOverride('iso')" disabled>コピー</button>
+                </div>
+                <!-- 撮影日時 -->
+                <div class="override-row">
+                    <label>撮影日時</label>
+                    <input type="checkbox" id="ov-datetime-chk" disabled>
+                    <textarea id="ov-datetime-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-datetime-copy" onclick="copyExifToOverride('datetime')" disabled>コピー</button>
+                </div>
+                <!-- 署名 -->
+                <div class="override-row">
+                    <label>署名</label>
+                    <input type="checkbox" id="ov-copyright-chk" disabled>
+                    <textarea id="ov-copyright-val" class="override-val" placeholder="上書き用設定を記載" disabled rows="1"></textarea>
+                    <button class="copy-btn" id="ov-copyright-copy" onclick="copyExifToOverride('copyright')" disabled>コピー</button>
+                </div>
+
+                <!-- 一括操作アクション -->
+                <div class="override-bulk-actions">
+                    <div class="bulk-check-group">
+                        <span class="bulk-label">チェックボックスを</span>
+                        <button class="bulk-btn" id="bulk-check-all">すべてチェックする</button>
+                        <button class="bulk-btn" id="bulk-uncheck-all">すべて外す</button>
+                    </div>
+                    <div class="bulk-copy-group">
+                        <button class="bulk-btn bulk-btn-copy" id="bulk-copy-all">すべてコピーする</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. テンプレート設定 -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-template', this)">
+            テンプレート設定 <span>▼</span>
+        </div>
+        <div class="accordion-content open" id="content-template">
+            <div style="margin-bottom: 16px; font-size: 13px; font-weight: 600; color: var(--text-sub);">
+            ◆ フレームレイアウトを選択</div>
+            
+            <div class="template-picker">
+                <label class="template-option">
+                    <input type="radio" name="template-type" value="center-2" checked>
+                    <span class="template-label">センター / 2行</span>
+                </label>
+                <label class="template-option">
+                    <input type="radio" name="template-type" value="left-2">
+                    <span class="template-label">左揃え / 2行</span>
+                </label>
+                <label class="template-option">
+                    <input type="radio" name="template-type" value="right-2">
+                    <span class="template-label">右揃え / 2行</span>
+                </label>
+                <label class="template-option">
+                    <input type="radio" name="template-type" value="side-2">
+                    <span class="template-label">サイド2列 / 2行</span>
+                </label>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                ※ 項目・フォント・フレーム設定は、各テンプレートごとに個別に保存されます。
+            </p>
+        </div>
+    </div>
+
+    <!-- 3. 項目設定 -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-items', this)">
+            項目設定 <span>▼</span>
+        </div>
+        <div class="accordion-content" id="content-items">
+
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                カードをつかんでドラッグ＆ドロップすると、順番や行の移動ができます。各チェックボックスで表示・非表示を切り替えられます。
+            </p>
+
+            <div style="margin-bottom: 14px; text-align: right;">
+                <button type="button" class="reset-order-btn" id="reset-order-btn" title="項目の配置と表示設定を初期状態に戻します">
+                    ↺ 配置を初期状態に戻す
+                </button>
+            </div>
+
+
+            <!-- 1行目の配置ゾーン -->
+            <div class="drag-zone-group only-standard">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">
+                        ■ 1行目に記載する項目
+                        <span class="drag-zone-badge" id="line1-count">3項目</span>
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト1設定適用</span>
+                </div>
+                <div class="drag-container" id="container-line1" data-line="line1"></div>
+            </div>
+
+            <!-- 2行目の配置ゾーン -->
+            <div class="drag-zone-group only-standard" style="margin-top: 18px;">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">
+                        ■ 2行目に記載する項目
+                        <span class="drag-zone-badge" id="line2-count">6項目</span>
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト2設定適用</span>
+                </div>
+                <div class="drag-container" id="container-line2" data-line="line2"></div>
+            </div>
+
+            <!-- サイド用 配置ゾーン -->
+            <div class="drag-zone-group only-side-2">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">■ 左1行目に記載する項目 <span class="drag-zone-badge" id="leftLine1-count">0項目</span></span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト1設定適用</span>
+                </div>
+                <div class="drag-container" id="container-leftLine1" data-line="leftLine1"></div>
+            </div>
+            <div class="drag-zone-group only-side-2" style="margin-top: 18px;">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">■ 右1行目に記載する項目 <span class="drag-zone-badge" id="rightLine1-count">0項目</span></span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト2設定適用</span>
+                </div>
+                <div class="drag-container" id="container-rightLine1" data-line="rightLine1"></div>
+            </div>
+            <div class="drag-zone-group only-side-2" style="margin-top: 18px;">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">■ 左2行目に記載する項目 <span class="drag-zone-badge" id="leftLine2-count">0項目</span></span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト3設定適用</span>
+                </div>
+                <div class="drag-container" id="container-leftLine2" data-line="leftLine2"></div>
+            </div>
+            <div class="drag-zone-group only-side-2" style="margin-top: 18px;">
+                <div class="drag-zone-header">
+                    <span class="drag-zone-title">■ 右2行目に記載する項目 <span class="drag-zone-badge" id="rightLine2-count">0項目</span></span>
+                    <span style="font-size: 11px; color: var(--text-muted);">テキスト4設定適用</span>
+                </div>
+                <div class="drag-container" id="container-rightLine2" data-line="rightLine2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. フォント設定 -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-font', this)">
+            フォント設定 <span>▼</span>
+        </div>
+        <div class="accordion-content" id="content-font">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>テキスト1 (1行目 or 左1行目) フォント(%)</label>
+                    <input type="number" id="font-size-1" value="38" min="1" max="200">
+                </div>
+                <div class="form-group">
+                    <label>テキスト2 (2行目 or 右1行目) フォント(%)</label>
+                    <input type="number" id="font-size-2" value="30" min="1" max="200">
+                </div>
+                <div class="form-group only-side-2">
+                    <label>テキスト3 (左2行目) フォント(%)</label>
+                    <input type="number" id="font-size-3" value="30" min="1" max="200">
+                </div>
+                <div class="form-group only-side-2">
+                    <label>テキスト4 (右2行目) フォント(%)</label>
+                    <input type="number" id="font-size-4" value="32" min="1" max="200">
+                </div>
+
+                <div class="form-group">
+                    <label>テキスト1 カラー</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="color" id="font-color-1" value="#252525" style="padding: 2px; height: 38px; width: 44px; cursor: pointer; border: 1px solid var(--border-color); border-radius: 6px; background: transparent;">
+                        <input type="text" id="font-color-text-1" value="#252525" style="flex: 1; font-family: monospace;" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>テキスト2 カラー</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="color" id="font-color-2" value="#6A6A6A" style="padding: 2px; height: 38px; width: 44px; cursor: pointer; border: 1px solid var(--border-color); border-radius: 6px; background: transparent;">
+                        <input type="text" id="font-color-text-2" value="#6A6A6A" style="flex: 1; font-family: monospace;" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group only-side-2">
+                    <label>テキスト3 カラー</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="color" id="font-color-3" value="#252525" style="padding: 2px; height: 38px; width: 44px; cursor: pointer; border: 1px solid var(--border-color); border-radius: 6px; background: transparent;">
+                        <input type="text" id="font-color-text-3" value="#252525" style="flex: 1; font-family: monospace;" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group only-side-2">
+                    <label>テキスト4 カラー</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="color" id="font-color-4" value="#6A6A6A" style="padding: 2px; height: 38px; width: 44px; cursor: pointer; border: 1px solid var(--border-color); border-radius: 6px; background: transparent;">
+                        <input type="text" id="font-color-text-4" value="#6A6A6A" style="flex: 1; font-family: monospace;" maxlength="7">
+                    </div>
+                </div>
+            </div>
+
+            <!-- フォント書体選択 -->
+            <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <label>◆ フォント書体</label>
+                <div class="font-picker">
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="Noto Sans JP" checked class="font-radio">
+                        <span class="font-label" style="font-family: 'Noto Sans JP';">Noto Sans JP</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="Google Sans Flex" class="font-radio">
+                        <span class="font-label" style="font-family: 'Google Sans Flex';">Google Sans Flex</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="IBM Plex Sans JP" class="font-radio">
+                        <span class="font-label" style="font-family: 'IBM Plex Sans JP';">IBM Plex Sans JP</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="ZEN 角ゴシック New" class="font-radio">
+                        <span class="font-label" style="font-family: 'ZEN 角ゴシック New';">ZEN 角ゴシック New</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="さわらびゴシック" class="font-radio">
+                        <span class="font-label" style="font-family: 'さわらびゴシック';">さわらびゴシック</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="クレー One" class="font-radio">
+                        <span class="font-label" style="font-family: 'クレー One';">クレー One</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="小杉丸" class="font-radio">
+                        <span class="font-label" style="font-family: '小杉丸';">小杉丸</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="佑字 朴" class="font-radio">
+                        <span class="font-label" style="font-family: '佑字 朴';">佑字 朴</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="Cherry Bomb" class="font-radio">
+                        <span class="font-label" style="font-family: 'Cherry Bomb';">Cherry Bomb</span>
+                    </label>
+                    <label class="font-option-container">
+                        <input type="radio" name="font-family" value="はちまるポップ" class="font-radio">
+                        <span class="font-label" style="font-family: 'はちまるポップ';">はちまるポップ</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. フレーム設定（サイズ・色・枠線） -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-frame-settings', this)">
+            フレーム設定 <span>▼</span>
+        </div>
+        <div class="accordion-content" id="content-frame-settings">
+            <div style="margin-bottom: 16px; font-size: 13px; font-weight: 600; color: var(--text-sub);">
+            ◆ 余白サイズ設定</div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>上 枠サイズ(%)</label>
+                    <input type="number" id="frame-top" value="4" min="0" max="50">
+                </div>
+                <div class="form-group">
+                    <label>下 枠サイズ(%)</label>
+                    <input type="number" id="frame-bottom" value="12" min="0" max="50">
+                </div>
+                <div class="form-group">
+                    <label>左 枠サイズ(%)</label>
+                    <input type="number" id="frame-left" value="4" min="0" max="50">
+                </div>
+                <div class="form-group">
+                    <label>右 枠サイズ(%)</label>
+                    <input type="number" id="frame-right" value="4" min="0" max="50">
+                </div>
+            </div>
+
+
+            <hr style="margin: 24px 0; border: none; border-top: 1px dashed var(--border-color);">
+            
+            <div style="margin-bottom: 16px; font-size: 13px; font-weight: 600; color: var(--text-sub);">
+            ◆ フレームカラー設定</div>
+
+            <div class="color-picker">
+                <label class="color-option">
+                    <input type="radio" name="frame-color" value="#FFFFFF" checked>
+                    <span class="color-swatch" style="background-color: #FFFFFF;"></span>
+                    <span class="color-label">白 (#FFFFFF)</span>
+                </label>
+                <label class="color-option">
+                    <input type="radio" name="frame-color" value="#000000">
+                    <span class="color-swatch" style="background-color: #000000;"></span>
+                    <span class="color-label">黒 (#000000)</span>
+                </label>
+                <label class="color-option">
+                    <input type="radio" name="frame-color" value="#A0A0A0">
+                    <span class="color-swatch" style="background-color: #A0A0A0;"></span>
+                    <span class="color-label">グレー (#A0A0A0)</span>
+                </label>
+            </div>
+            
+
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color);"></div>
+            <div style="margin-bottom: 16px; font-size: 13px; font-weight: 600; color: var(--text-sub);">
+            ◆ 枠線設定</div>
+            <div style="display:flex; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color); margin: 0 10px 10px 10px;">
+                    <input type="checkbox" id="frame-border-chk" style="width: 16px; height: 16px; accent-color: var(--primary);"> 
+                    <span style="font-size: 13px; font-weight: 600;">外枠線を設ける（グレー）</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color); margin: 0 10px 10px 10px;">
+                    <input type="checkbox" id="inner-border-chk" style="width: 16px; height: 16px; accent-color: var(--primary);"> 
+                    <span style="font-size: 13px; font-weight: 600;">内枠線を設ける（グレー）</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <button id="generate-btn" class="main-btn">フレームを生成する</button>
+    <button id="download-btn" class="main-btn" style="display: none;">一括ダウンロードする</button>
+    
+    <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
+
+    <div class="result-area" id="result-area">
+        <!-- 生成されたサムネイルがここに並びます -->
+    </div>
+</div>
+
+<div class="explanation">
+    <div class="usage-section">
+        <h3> 本ツールについて</h3>
+        <p>・画像の読み込みやフレーム合成などの処理はブラウザ内（ローカル）で実施しています。<br>サーバ等へのアップロードは行われません。</p>
+        <p>・設定はブラウザ内（ローカル）に保存されますので、別のブラウザや端末には引き継がれません。</p>
+        
+        <h3> できること</h3>
+        <p>・アップロードした画像に、EXIF情報のフレームを追加します。</p>
+        <p>・生成した画像のダウンロードができるとともに、生成時にクリップボードにも保存されるため、そのままペーストして利用が可能です。</p>
+        <p>・フォントサイズやフレーム枠などの細かい設定や、EXIF情報を強制上書きするモードもあるため、ご自身の好きな設定に変更ください。</p>
+        
+        <h3> 利用フォント・ツールのライセンスについて</h3>
+        <p>・本ツールでは、画像への文字入れ用に以下のオープンソースフォント／jsフレームワーク等を利用しています。著作権およびライセンスは、それぞれの権利者に帰属します。</p>
+        <ul>
+            <li><a href="https://fonts.google.com/noto/specimen/Noto+Sans+JP" target="_blank" rel="noopener">Noto Sans JP</a> (SIL Open Font License 1.1)</li>
+            <li>Google Sans Flex (Google LLC)</li>
+            <li><a href="https://fonts.google.com/specimen/IBM+Plex+Sans+JP" target="_blank" rel="noopener">IBM Plex Sans JP</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Zen+Kaku+Gothic+New" target="_blank" rel="noopener">ZEN 角ゴシック New</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Sawarabi+Gothic" target="_blank" rel="noopener">さわらびゴシック</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Klee+One" target="_blank" rel="noopener">クレー One</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Kosugi+Maru" target="_blank" rel="noopener">小杉丸</a> (Apache License 2.0)</li>
+            <li><a href="https://fonts.google.com/specimen/Yuji+Mai" target="_blank" rel="noopener">佑字 朴</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Cherry+Bomb+One" target="_blank" rel="noopener">Cherry Bomb One</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://fonts.google.com/specimen/Hachi+Maru+Pop" target="_blank" rel="noopener">はちまるポップ</a> (SIL Open Font License 1.1)</li>
+            <li><a href="https://github.com/MikeKovarik/exifr" target="_blank" rel="noopener">exifr</a> (MIT License)</li>
+            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)</li>
+        </ul>
+    </div>
+</div>
+
+<footer class="footer usage-section">
+    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>
+     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
+</footer>
+
+    <script>
+    // iOS / iPadOS 環境を判定するハイブリッド関数
+    const isIOS = () => {
+        const ua = navigator.userAgent.toLowerCase();
+        // iPhone, iPod touch の判定
+        if (/iphone|ipod/.test(ua)) return true;
+        // iPad の判定 (旧来のUA、およびiPadOS 13以降のMacIntel偽装を検知)
+        if (/ipad/.test(ua)) return true;
+        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+        
+        return false;
+    };
+
+    const DEFAULT_ITEM_ORDER_STANDARD = {
+        line1: [
+            { id: 'shot_on', label: '「Shot on」', enabled: true },
+            { id: 'model', label: 'カメラ', enabled: true },
+            { id: 'make', label: 'メーカー', enabled: true }
+        ],
+        line2: [
+            { id: 'lens', label: 'レンズ', enabled: true },
+            { id: 'focal', label: '焦点距離', enabled: true },
+            { id: 'fnum', label: 'F値', enabled: true },
+            { id: 'exp', label: '露出時間', enabled: true },
+            { id: 'iso', label: 'ISO感度', enabled: true },
+            { id: 'datetime', label: '撮影日時', enabled: true },
+            { id: 'copyright', label: '署名', enabled: false }
+        ]
+    };
+
+    const DEFAULT_ITEM_ORDER_SIDE = {
+        leftLine1: [
+            { id: 'focal', label: '焦点距離', enabled: true },
+            { id: 'fnum', label: 'F値', enabled: true },
+            { id: 'exp', label: '露出時間', enabled: true },
+            { id: 'iso', label: 'ISO感度', enabled: true }
+        ],
+        rightLine1: [
+            { id: 'shot_on', label: '「Shot on」', enabled: true },
+            { id: 'model', label: 'カメラ', enabled: true },
+            { id: 'make', label: 'メーカー', enabled: true }
+        ],
+        leftLine2: [
+            { id: 'datetime', label: '撮影日時', enabled: true },
+            { id: 'copyright', label: '署名', enabled: false }
+        ],
+        rightLine2: [
+            { id: 'lens', label: 'レンズ', enabled: true }
+        ]
+    };
+
+    // v0.81 マイグレーション: side-2のフォント設定を一度リセットして新デフォルトを適用
+    if (!localStorage.getItem('v081_migrated_fonts')) {
+        ['#FFFFFF', '#000000', '#A0A0A0'].forEach(c => {
+            localStorage.removeItem(`font-color-1_side-2_${c}`);
+            localStorage.removeItem(`font-color-2_side-2_${c}`);
+            localStorage.removeItem(`font-color-3_side-2_${c}`);
+            localStorage.removeItem(`font-color-4_side-2_${c}`);
+        });
+        localStorage.removeItem('font-size-1_side-2');
+        localStorage.removeItem('font-size-2_side-2');
+        localStorage.removeItem('font-size-3_side-2');
+        localStorage.removeItem('font-size-4_side-2');
+        localStorage.setItem('v081_migrated_fonts', 'true');
+    }
+
+    // v0.82 マイグレーション: 各テンプレートのフォントサイズのデフォルト値を新仕様に合わせてリセット
+    if (!localStorage.getItem('v082_migrated_fonts_size')) {
+        const templates = ['center-2', 'left-2', 'right-2', 'side-2'];
+        templates.forEach(t => {
+            localStorage.removeItem(`font-size-1_${t}`);
+            localStorage.removeItem(`font-size-2_${t}`);
+            localStorage.removeItem(`font-size-3_${t}`);
+            localStorage.removeItem(`font-size-4_${t}`);
+        });
+        localStorage.removeItem('font-size-1');
+        localStorage.removeItem('font-size-2');
+        localStorage.removeItem('font-size-3');
+        localStorage.removeItem('font-size-4');
+        localStorage.setItem('v082_migrated_fonts_size', 'true');
+    }
+
+    let currentTemplateId = localStorage.getItem('selected-template') || 'center-2';
+    document.body.setAttribute('data-template-type', currentTemplateId);
+
+    const getActiveLineKeys = (templateId) => {
+        return templateId === 'side-2' 
+            ? ['leftLine1', 'rightLine1', 'leftLine2', 'rightLine2'] 
+            : ['line1', 'line2'];
+    };
+
+    // ローカルストレージから項目の並び順・状態を読み込み
+    function loadItemOrder(templateId = currentTemplateId) {
+        const saved = localStorage.getItem(`exif-item-order_${templateId}`);
+        const fallback = localStorage.getItem('exif-item-order'); // 互換性フォールバック
+        const dataToParse = saved || fallback;
+        
+        const isSide = templateId === 'side-2';
+        const defaultOrder = isSide ? DEFAULT_ITEM_ORDER_SIDE : DEFAULT_ITEM_ORDER_STANDARD;
+        
+        if (!dataToParse) return JSON.parse(JSON.stringify(defaultOrder));
+        try {
+            const parsed = JSON.parse(dataToParse);
+            if (isSide && Array.isArray(parsed.leftLine1)) {
+                // v0.84 署名の追加マイグレーション
+                const hasCopyright = ['leftLine1', 'rightLine1', 'leftLine2', 'rightLine2'].some(key => parsed[key].some(it => it.id === 'copyright'));
+                if (!hasCopyright) {
+                    if (!parsed.leftLine2) parsed.leftLine2 = [];
+                    parsed.leftLine2.push({ id: 'copyright', label: '署名', enabled: false });
+                }
+                return parsed;
+            } else if (!isSide && Array.isArray(parsed.line1)) {
+                // 古い設定データのマイグレーション処理: shot_on が存在しない場合は1行目の先頭に追加
+                const hasShotOn = parsed.line1.some(it => it.id === 'shot_on') || parsed.line2.some(it => it.id === 'shot_on');
+                if (!hasShotOn) {
+                    const oldShotOnChk = localStorage.getItem(`shot-on-chk_${templateId}`) === 'true' || localStorage.getItem('shot-on-chk') === 'true';
+                    parsed.line1.unshift({ id: 'shot_on', label: '「Shot on」', enabled: oldShotOnChk });
+                }
+                // v0.84 署名の追加マイグレーション
+                const hasCopyright = parsed.line1.some(it => it.id === 'copyright') || parsed.line2.some(it => it.id === 'copyright');
+                if (!hasCopyright) {
+                    if (!parsed.line2) parsed.line2 = [];
+                    parsed.line2.push({ id: 'copyright', label: '署名', enabled: false });
+                }
+                return parsed;
+            }
+        } catch (e) {
+            console.warn("項目順データの復元エラー:", e);
+        }
+        return JSON.parse(JSON.stringify(defaultOrder));
+    }
+
+    let currentItemOrder = loadItemOrder(currentTemplateId);
+
+    function saveItemOrder() {
+        localStorage.setItem(`exif-item-order_${currentTemplateId}`, JSON.stringify(currentItemOrder));
+        updateZoneCounts();
+    }
+
+    function updateZoneCounts() {
+        getActiveLineKeys(currentTemplateId).forEach(key => {
+            const el = document.getElementById(`${key}-count`);
+            if (el && currentItemOrder[key]) {
+                el.textContent = `${currentItemOrder[key].length}項目`;
+            }
+        });
+    }
+
+    // ドラッグ＆ドロップUIのレンダリング
+    function renderDragItems() {
+        const keys = getActiveLineKeys(currentTemplateId);
+        keys.forEach(lineKey => {
+            const container = document.getElementById(`container-${lineKey}`);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const items = currentItemOrder[lineKey] || [];
+            items.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'drag-item';
+                el.draggable = true;
+                el.dataset.id = item.id;
+                el.dataset.line = lineKey;
+                el.dataset.index = index;
+
+                // グリップアイコン
+                const handle = document.createElement('span');
+                handle.className = 'drag-handle';
+                handle.innerHTML = '⋮⋮';
+                handle.title = 'ドラッグして移動';
+
+                // チェックボックス
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.checked = item.enabled;
+                chk.id = `item-chk-${item.id}`;
+                chk.addEventListener('change', (e) => {
+                    item.enabled = e.target.checked;
+                    saveItemOrder();
+                });
+
+                // ラベル
+                const label = document.createElement('label');
+                label.htmlFor = chk.id;
+                label.textContent = item.label;
+                label.style.cursor = 'pointer';
+
+                // スマホ・キー操作向け補助ボタン群（行移動 / 前後移動）
+                const navBtns = document.createElement('span');
+                navBtns.className = 'drag-nav-btns';
+
+                // 行間切り替えボタン
+                const switchBtn = document.createElement('button');
+                switchBtn.type = 'button';
+                switchBtn.className = 'drag-nav-btn';
+                switchBtn.innerHTML = '次行へ';
+                switchBtn.title = '次の行へ移動';
+                switchBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    moveItemToOtherLine(lineKey, index);
+                };
+
+                // 前へ移動ボタン
+                const prevBtn = document.createElement('button');
+                prevBtn.type = 'button';
+                prevBtn.className = 'drag-nav-btn';
+                prevBtn.innerHTML = '◀';
+                prevBtn.title = '前へ';
+                prevBtn.disabled = index === 0;
+                prevBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    swapItemOrder(lineKey, index, index - 1);
+                };
+
+                // 次へ移動ボタン
+                const nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'drag-nav-btn';
+                nextBtn.innerHTML = '▶';
+                nextBtn.title = '次へ';
+                nextBtn.disabled = index === items.length - 1;
+                nextBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    swapItemOrder(lineKey, index, index + 1);
+                };
+
+                navBtns.appendChild(switchBtn);
+                navBtns.appendChild(prevBtn);
+                navBtns.appendChild(nextBtn);
+
+                el.appendChild(handle);
+                el.appendChild(chk);
+                el.appendChild(label);
+                el.appendChild(navBtns);
+
+                setupDragEvents(el);
+                container.appendChild(el);
+            });
+        });
+        updateZoneCounts();
+    }
+
+    function moveItemToOtherLine(sourceLine, index) {
+        const keys = getActiveLineKeys(currentTemplateId);
+        const currentKeyIndex = keys.indexOf(sourceLine);
+        const nextKeyIndex = (currentKeyIndex + 1) % keys.length;
+        const targetLine = keys[nextKeyIndex];
+
+        const [moved] = currentItemOrder[sourceLine].splice(index, 1);
+        if (!currentItemOrder[targetLine]) currentItemOrder[targetLine] = [];
+        currentItemOrder[targetLine].push(moved);
+        saveItemOrder();
+        renderDragItems();
+    }
+
+    function swapItemOrder(lineKey, fromIdx, toIdx) {
+        const list = currentItemOrder[lineKey];
+        if (toIdx < 0 || toIdx >= list.length) return;
+        const temp = list[fromIdx];
+        list[fromIdx] = list[toIdx];
+        list[toIdx] = temp;
+        saveItemOrder();
+        renderDragItems();
+    }
+
+    let draggedElement = null;
+
+    function setupDragEvents(el) {
+        el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', el.dataset.id); // Firefox等での動作に必要
+            setTimeout(() => el.classList.add('dragging'), 0);
+            draggedElement = el;
+        });
+        
+        el.addEventListener('dragend', () => {
+            el.classList.remove('dragging');
+            draggedElement = null;
+        });
+    }
+
+    ['line1', 'line2', 'leftLine1', 'leftLine2', 'rightLine1', 'rightLine2'].forEach(lineKey => {
+        const container = document.getElementById(`container-${lineKey}`);
+        if (!container) return;
+
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            container.classList.add('drag-over');
+
+            const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
+            if (draggedElement) {
+                if (afterElement == null) {
+                    container.appendChild(draggedElement);
+                } else {
+                    container.insertBefore(draggedElement, afterElement);
+                }
+            }
+        });
+
+        container.addEventListener('dragleave', (e) => {
+            if (!container.contains(e.relatedTarget)) {
+                container.classList.remove('drag-over');
+            }
+        });
+
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            container.classList.remove('drag-over');
+            syncOrderFromDOM();
+        });
+    });
+
+    function getDragAfterElement(container, x, y) {
+        const draggableElements = [...container.querySelectorAll('.drag-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            // 水平・垂直の両方向のユークリッド距離で判定
+            const childCenterX = box.left + box.width / 2;
+            const childCenterY = box.top + box.height / 2;
+            const dist = Math.hypot(x - childCenterX, y - childCenterY);
+
+            if (dist < closest.distance) {
+                // ドロップ位置が要素の手前側か後ろ側かを判定
+                const isBefore = (x < childCenterX && Math.abs(y - childCenterY) < box.height / 2) || (y < box.top);
+                return { distance: dist, element: isBefore ? child : child.nextSibling };
+            } else {
+                return closest;
+            }
+        }, { distance: Number.POSITIVE_INFINITY, element: null }).element;
+    }
+
+    // DOMの並び順から currentItemOrder を更新して保存
+    function syncOrderFromDOM() {
+        const keys = getActiveLineKeys(currentTemplateId);
+        
+        // 途中で currentItemOrder を書き換えると他の行から移動してきたアイテムが見つからなくなるため、
+        // 処理前にすべてのアイテムを抽出してマップ化しておく
+        const allItemsMap = new Map();
+        keys.forEach(key => {
+            (currentItemOrder[key] || []).forEach(item => {
+                allItemsMap.set(item.id, item);
+            });
+        });
+
+        const newOrder = {};
+
+        keys.forEach(key => {
+            const newLine = [];
+            document.querySelectorAll(`#container-${key} .drag-item`).forEach(el => {
+                const item = allItemsMap.get(el.dataset.id);
+                if (item) newLine.push(item);
+            });
+            newOrder[key] = newLine;
+        });
+
+        // 組み立てが終わってから、現在のデータオブジェクトを一括で更新する
+        keys.forEach(key => {
+            currentItemOrder[key] = newOrder[key];
+        });
+
+        saveItemOrder();
+        renderDragItems();
+    }
+
+    // 初期化時レンダリングおよびリセットボタン設定
+    document.addEventListener('DOMContentLoaded', () => {
+        renderDragItems();
+
+        const resetBtn = document.getElementById('reset-order-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                const defaultOrder = currentTemplateId === 'side-2' ? DEFAULT_ITEM_ORDER_SIDE : DEFAULT_ITEM_ORDER_STANDARD;
+                currentItemOrder = JSON.parse(JSON.stringify(defaultOrder));
+                saveItemOrder();
+                renderDragItems();
+                statusText.textContent = '項目の並び順を初期状態に戻しました。';
+            });
+        }
+    });
+
+    let currentFiles = []; 
+    let generatedResults = []; 
+
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    const generateBtn = document.getElementById('generate-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const resultArea = document.getElementById('result-area');
+    const statusText = document.getElementById('status-text');
+
+    const lightboxModal = document.getElementById('lightbox-modal');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+
+    const themeBtn = document.getElementById('theme-btn');
+    let isDark = localStorage.getItem('theme') === 'dark';
+    const applyTheme = () => {
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        themeBtn.textContent = isDark ? '☀️' : '🌙';
+    };
+    applyTheme();
+    themeBtn.addEventListener('click', () => {
+        isDark = !isDark;
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        applyTheme();
+    });
+
+    window.toggleAccordion = function(contentId, headerEl) {
+        const content = document.getElementById(contentId);
+        content.classList.toggle('open');
+        const span = headerEl.querySelector('span');
+        span.textContent = content.classList.contains('open') ? '▲' : '▼';
+    };
+
+    const commonInputs = [
+        'exif-embed-chk',
+        'ov-main-chk',
+        'ov-model-chk', 'ov-model-val',
+        'ov-make-chk', 'ov-make-val',
+        'ov-lens-chk', 'ov-lens-val',
+        'ov-focal-chk', 'ov-focal-val',
+        'ov-fnum-chk', 'ov-fnum-val',
+        'ov-exp-chk', 'ov-exp-val',
+        'ov-iso-chk', 'ov-iso-val',
+        'ov-datetime-chk', 'ov-datetime-val',
+        'ov-copyright-chk', 'ov-copyright-val'
+    ];
+
+    const templateDependentInputs = [
+        'font-size-1', 'font-size-2', 'font-size-3', 'font-size-4',
+        'frame-top', 'frame-bottom', 'frame-left', 'frame-right', 
+        'frame-border-chk',
+        'inner-border-chk'
+    ];
+
+    function loadCommonSettings() {
+        commonInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const saved = localStorage.getItem(id);
+            if (saved !== null) {
+                if (el.type === 'checkbox') el.checked = saved === 'true';
+                else el.value = saved;
+            }
+        });
+    }
+
+    function loadTemplateDependentSettings() {
+        templateDependentInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const saved = localStorage.getItem(`${id}_${currentTemplateId}`);
+            const fallback = localStorage.getItem(id); // 互換性フォールバック
+            let dataToSet = saved !== null ? saved : fallback;
+            
+            // 未設定なら各テンプレート・項目ごとのデフォルト値を適用
+            if (dataToSet === null) {
+                if (currentTemplateId === 'side-2') {
+                    if (id === 'font-size-1') dataToSet = '38';
+                    if (id === 'font-size-2') dataToSet = '40';
+                    if (id === 'font-size-3') dataToSet = '30';
+                    if (id === 'font-size-4') dataToSet = '32';
+                } else {
+                    if (id === 'font-size-1') dataToSet = '38';
+                    if (id === 'font-size-2') dataToSet = '30';
+                }
+            }
+
+            if (dataToSet !== null) {
+                if (el.type === 'checkbox') el.checked = dataToSet === 'true';
+                else el.value = dataToSet;
+            }
+        });
+    }
+
+    function restoreRadioState(name, templateId, defaultValue) {
+        const saved = localStorage.getItem(`${name}_${templateId}`);
+        const fallback = localStorage.getItem(name); // 互換性フォールバック
+        const val = saved !== null ? saved : (fallback !== null ? fallback : defaultValue);
+        const radio = document.querySelector(`input[name="${name}"][value="${val}"]`);
+        if (radio) radio.checked = true;
+    }
+
+    // テンプレート切り替え時の処理
+    function changeTemplate(newTemplateId) {
+        currentTemplateId = newTemplateId;
+        localStorage.setItem('selected-template', newTemplateId);
+        document.body.setAttribute('data-template-type', currentTemplateId);
+        
+        loadTemplateDependentSettings();
+        restoreRadioState('frame-color', currentTemplateId, '#FFFFFF');
+        restoreRadioState('font-family', currentTemplateId, 'Noto Sans JP');
+        loadFontColorsForCurrentFrame();
+        
+        currentItemOrder = loadItemOrder(currentTemplateId);
+        renderDragItems();
+    }
+
+    // イベントリスナーの登録
+    document.querySelectorAll('input[name="template-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => changeTemplate(e.target.value));
+    });
+
+    commonInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener('change', () => {
+            localStorage.setItem(id, el.type === 'checkbox' ? el.checked : el.value);
+            if(id === 'ov-main-chk') updateOverrideInputsState();
+        });
+    });
+
+    templateDependentInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener('change', () => {
+            localStorage.setItem(`${id}_${currentTemplateId}`, el.type === 'checkbox' ? el.checked : el.value);
+        });
+    });
+
+    // 初回ロード実行
+    const tplRadio = document.querySelector(`input[name="template-type"][value="${currentTemplateId}"]`);
+    if (tplRadio) tplRadio.checked = true;
+
+    loadCommonSettings();
+    loadTemplateDependentSettings();
+
+    const defaultFontColors = {
+        '#FFFFFF': { c1: '#252525', c2: '#6A6A6A' },
+        '#000000': { c1: '#FFFFFF', c2: '#E0E0E0' },
+        '#A0A0A0': { c1: '#000000', c2: '#FFFFFF' }
+    };
+
+    function getCurrentFrameColor() {
+        const checked = document.querySelector('input[name="frame-color"]:checked');
+        return checked ? checked.value : '#FFFFFF';
+    }
+
+    function saveCurrentFontColor(level, hexValue) {
+        const frameColor = getCurrentFrameColor();
+        localStorage.setItem(`font-color-${level}_${currentTemplateId}_${frameColor}`, hexValue.toUpperCase());
+    }
+
+    function loadFontColorsForCurrentFrame() {
+        const frameColor = getCurrentFrameColor();
+        const defaults = defaultFontColors[frameColor] || { c1: '#252525', c2: '#6A6A6A' };
+
+        let defC1 = defaults.c1;
+        let defC2 = defaults.c2;
+        let defC3 = defaults.c1;
+        let defC4 = defaults.c2;
+
+        if (currentTemplateId === 'side-2') {
+            defC1 = defaults.c1; 
+            defC2 = defaults.c1; // 右1行目もメインカラー
+            defC3 = defaults.c2; // 左2行目はサブカラー
+            defC4 = defaults.c2; // 右2行目もサブカラー
+        }
+
+        const savedC1 = localStorage.getItem(`font-color-1_${currentTemplateId}_${frameColor}`);
+        const fallbackC1 = currentTemplateId === 'side-2' ? null : localStorage.getItem(`font-color-1_${frameColor}`);
+        const finalC1 = savedC1 !== null ? savedC1 : (fallbackC1 !== null ? fallbackC1 : defC1);
+
+        const savedC2 = localStorage.getItem(`font-color-2_${currentTemplateId}_${frameColor}`);
+        const fallbackC2 = currentTemplateId === 'side-2' ? null : localStorage.getItem(`font-color-2_${frameColor}`);
+        const finalC2 = savedC2 !== null ? savedC2 : (fallbackC2 !== null ? fallbackC2 : defC2);
+
+        const savedC3 = localStorage.getItem(`font-color-3_${currentTemplateId}_${frameColor}`);
+        const finalC3 = savedC3 !== null ? savedC3 : defC3;
+
+        const savedC4 = localStorage.getItem(`font-color-4_${currentTemplateId}_${frameColor}`);
+        const finalC4 = savedC4 !== null ? savedC4 : defC4;
+
+        const color1 = document.getElementById('font-color-1');
+        const text1 = document.getElementById('font-color-text-1');
+        const color2 = document.getElementById('font-color-2');
+        const text2 = document.getElementById('font-color-text-2');
+        const color3 = document.getElementById('font-color-3');
+        const text3 = document.getElementById('font-color-text-3');
+        const color4 = document.getElementById('font-color-4');
+        const text4 = document.getElementById('font-color-text-4');
+
+        if (color1 && text1) { color1.value = finalC1; text1.value = finalC1.toUpperCase(); }
+        if (color2 && text2) { color2.value = finalC2; text2.value = finalC2.toUpperCase(); }
+        if (color3 && text3) { color3.value = finalC3; text3.value = finalC3.toUpperCase(); }
+        if (color4 && text4) { color4.value = finalC4; text4.value = finalC4.toUpperCase(); }
+    }
+
+    const syncFontColors = (level, colorId, textId) => {
+        const colorEl = document.getElementById(colorId);
+        const textEl = document.getElementById(textId);
+        if(!colorEl || !textEl) return;
+        
+        colorEl.addEventListener('input', (e) => {
+            const val = e.target.value.toUpperCase();
+            textEl.value = val;
+            saveCurrentFontColor(level, val);
+        });
+        
+        textEl.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (val.length === 6 && !val.startsWith('#')) val = '#' + val;
+            if (val.match(/^#[0-9a-fA-F]{6}$/)) {
+                colorEl.value = val;
+                saveCurrentFontColor(level, val);
+            }
+        });
+        
+        textEl.addEventListener('change', (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            if (val.match(/^#[0-9a-fA-F]{6}$/)) {
+                val = val.toUpperCase();
+                colorEl.value = val;
+                e.target.value = val;
+                saveCurrentFontColor(level, val);
+            } else {
+                e.target.value = colorEl.value.toUpperCase();
+            }
+        });
+    };
+
+    // 初期化関数を呼び出し
+    restoreRadioState('frame-color', currentTemplateId, '#FFFFFF');
+    restoreRadioState('font-family', currentTemplateId, 'Noto Sans JP');
+    
+    loadFontColorsForCurrentFrame();
+
+    syncFontColors(1, 'font-color-1', 'font-color-text-1');
+    syncFontColors(2, 'font-color-2', 'font-color-text-2');
+    syncFontColors(3, 'font-color-3', 'font-color-text-3');
+    syncFontColors(4, 'font-color-4', 'font-color-text-4');
+
+    document.querySelectorAll('input[name="frame-color"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            localStorage.setItem(`frame-color_${currentTemplateId}`, e.target.value);
+            loadFontColorsForCurrentFrame();
+        });
+    });
+
+    document.querySelectorAll('input[name="font-family"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            localStorage.setItem(`font-family_${currentTemplateId}`, e.target.value);
+        });
+    });
+
+    function updateOverrideInputsState() {
+        const isMainOn = document.getElementById('ov-main-chk').checked;
+        const overrideContainer = document.getElementById('override-container');
+        
+        overrideContainer.style.display = isMainOn ? 'block' : 'none';
+
+        const overrides = ['model', 'make', 'lens', 'focal', 'fnum', 'exp', 'iso', 'datetime', 'copyright'];
+        overrides.forEach(key => {
+            const chk = document.getElementById(`ov-${key}-chk`);
+            const val = document.getElementById(`ov-${key}-val`);
+            const copyBtn = document.getElementById(`ov-${key}-copy`);
+            if (chk) chk.disabled = !isMainOn;
+            if (val) val.disabled = !isMainOn;
+            if (copyBtn) copyBtn.disabled = !isMainOn;
+        });
+    }
+    updateOverrideInputsState();
+
+    dropArea.addEventListener('click', (e) => {
+        if(e.target.tagName !== 'BUTTON') fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    
+    dropArea.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        dropArea.style.borderColor = "var(--primary)"; 
+        dropArea.style.background = "var(--card-bg-sub)"; 
+    });
+    dropArea.addEventListener('dragleave', () => { 
+        dropArea.style.borderColor = ""; 
+        dropArea.style.background = ""; 
+    });
+    dropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropArea.style.borderColor = ""; 
+        dropArea.style.background = ""; 
+        handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(files) {
+        let addedCount = 0;
+        for (let file of files) {
+            if (currentFiles.length >= 20) break;
+            if (file.type.startsWith('image/')) {
+                currentFiles.push(file);
+                addedCount++;
+            }
+        }
+        if (files.length > addedCount) {
+            statusText.textContent = `一度に処理できるのは最大20枚までです。超過したファイルはスキップされました。`;
+        }
+        renderFileQueue();
+        fileInput.value = '';
+    }
+
+    function renderFileQueue() {
+        fileList.innerHTML = '';
+        currentFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            
+            const name = document.createElement('div');
+            name.className = 'file-name';
+            name.textContent = file.name;
+            name.title = file.name;
+            
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-btn';
+            clearBtn.innerHTML = '&times;';
+            clearBtn.onclick = (e) => {
+                e.stopPropagation();
+                currentFiles.splice(index, 1);
+                renderFileQueue();
+            };
+            
+            item.appendChild(clearBtn);
+            item.appendChild(img);
+            item.appendChild(name);
+            fileList.appendChild(item);
+        });
+        
+        clearAllBtn.style.display = currentFiles.length > 1 ? 'block' : 'none';
+        resultArea.innerHTML = '';
+        downloadBtn.style.display = 'none';
+        statusText.textContent = '';
+        generatedResults = [];
+        
+        updateExifDisplay();
+    }
+
+    async function updateExifDisplay() {
+        const displayContainer = document.getElementById('extracted-exif-display');
+        if (!displayContainer) return;
+
+        if (currentFiles.length === 0) {
+            displayContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center;">画像が選択されていません。</div>';
+            return;
+        }
+
+        displayContainer.innerHTML = '<div style="text-align: center; color: var(--primary);">読み込み中...</div>';
+
+        let htmlContent = '';
+        for (let i = 0; i < currentFiles.length; i++) {
+            const file = currentFiles[i];
+            const exif = await getExifData(file);
+            
+            const isLast = (i === currentFiles.length - 1);
+            const styleMargin = isLast ? '0' : '10px';
+            const stylePadding = isLast ? '0' : '10px';
+            const styleBorder = isLast ? 'none' : '1px dashed var(--border-color)';
+            
+            htmlContent += `
+                <div style="margin-bottom: ${styleMargin}; padding-bottom: ${stylePadding}; border-bottom: ${styleBorder};">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: var(--primary);">■ 写真${i + 1} <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(${file.name})</span></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px;">
+                        <div>カメラ: <span>${exif.model || '-'}</span></div>
+                        <div>メーカー: <span>${exif.make || '-'}</span></div>
+                        <div>レンズ: <span>${exif.lens || '-'}</span></div>
+                        <div>焦点距離: <span>${exif.focalLength || '-'}</span></div>
+                        <div>F値: <span>${exif.fNumber || '-'}</span></div>
+                        <div>露出時間: <span>${exif.exposureTime || '-'}</span></div>
+                        <div>ISO感度: <span>${exif.iso || '-'}</span></div>
+                        <div>撮影日時: <span>${formatDateTime(exif.dateTimeOriginal) || '-'}</span></div>
+                        <div style="grid-column: span 2;">署名: <span>${exif.copyright || '-'}</span></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        displayContainer.innerHTML = htmlContent;
+    }
+    // 撮影日時文字列（EXIF規格: YYYY:MM:DD HH:MM:SS等）を表示・描画用（YYYY/MM/DD HH:mm:ss）に整形
+    function formatDateTime(dtStr) {
+        if (!dtStr) return '';
+        const match = String(dtStr).match(/^(\d{4})[:\/\.-](\d{2})[:\/\.-](\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        if (match) {
+            const [, y, m, d, hh, mm, ss] = match;
+            if (hh !== undefined && mm !== undefined) {
+                const secPart = ss !== undefined ? `:${ss}` : ':00';
+                return `${y}/${m}/${d} ${hh}:${mm}${secPart}`;
+            }
+            return `${y}/${m}/${d}`;
+        }
+        return String(dtStr).trim();
+    }
+
+    clearAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentFiles = [];
+        renderFileQueue();
+    });
+
+    let currentLightboxIndex = 0;
+
+    function updateLightboxImg() {
+        if (generatedResults.length === 0) return;
+        lightboxImg.src = generatedResults[currentLightboxIndex].dataUrl;
+        
+        const prevBtn = document.getElementById('lightbox-prev');
+        const nextBtn = document.getElementById('lightbox-next');
+        
+        if (generatedResults.length <= 1) {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'flex';
+            nextBtn.style.display = 'flex';
+            // 最初と最後の画像では該当する矢印を非表示（枠は残す）
+            prevBtn.style.visibility = currentLightboxIndex > 0 ? 'visible' : 'hidden';
+            nextBtn.style.visibility = currentLightboxIndex < generatedResults.length - 1 ? 'visible' : 'hidden';
+        }
+    }
+
+    window.openLightbox = function(index) {
+        currentLightboxIndex = index;
+        updateLightboxImg();
+        lightboxModal.style.display = 'flex';
+    };
+
+    lightboxModal.addEventListener('click', (e) => {
+        // 画像やボタン以外の領域をクリックした場合のみ閉じる
+        if (e.target === lightboxModal || e.target === lightboxClose) {
+            lightboxModal.style.display = 'none';
+            lightboxImg.src = '';
+        }
+    });
+
+    document.getElementById('lightbox-prev').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentLightboxIndex > 0) {
+            currentLightboxIndex--;
+            updateLightboxImg();
+        }
+    });
+
+    document.getElementById('lightbox-next').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentLightboxIndex < generatedResults.length - 1) {
+            currentLightboxIndex++;
+            updateLightboxImg();
+        }
+    });
+
+    // キーボード操作対応
+    document.addEventListener('keydown', (e) => {
+        if (lightboxModal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft' && currentLightboxIndex > 0) {
+                currentLightboxIndex--;
+                updateLightboxImg();
+            } else if (e.key === 'ArrowRight' && currentLightboxIndex < generatedResults.length - 1) {
+                currentLightboxIndex++;
+                updateLightboxImg();
+            } else if (e.key === 'Escape') {
+                lightboxModal.style.display = 'none';
+                lightboxImg.src = '';
+            }
+        }
+    });
+
+    // スワイプ操作対応
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    lightboxModal.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+    
+    lightboxModal.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, {passive: true});
+    
+    function handleSwipe() {
+        if (generatedResults.length <= 1) return;
+        const swipeThreshold = 40;
+        if (touchEndX < touchStartX - swipeThreshold) {
+            // 左スワイプ -> 次の画像へ
+            if (currentLightboxIndex < generatedResults.length - 1) {
+                currentLightboxIndex++;
+                updateLightboxImg();
+            }
+        }
+        if (touchEndX > touchStartX + swipeThreshold) {
+            // 右スワイプ -> 前の画像へ
+            if (currentLightboxIndex > 0) {
+                currentLightboxIndex--;
+                updateLightboxImg();
+            }
+        }
+    }
+
+    async function getExifData(file) {
+        let data = { 
+            model: '', make: '', lens: '', focalLength: '', fNumber: '', exposureTime: '', iso: '', 
+            dateTimeOriginal: null, focalLength35mm: null, gps: null,
+            exposureProgram: null, whiteBalance: null, flash: null, colorSpace: null,
+            copyright: '', artist: '', software: ''
+        };
+        try {
+            if (typeof exifr !== 'undefined') {
+                const parsed = await exifr.parse(file, {
+                    tiff: true,
+                    exif: true,
+                    gps: true,
+                    makerNote: true
+                });
+
+                let rawParsed = null;
+                try {
+                    // 数値のまま取得したいタグのため、translateValues: false で別途抽出
+                    rawParsed = await exifr.parse(file, {
+                        pick: ['ExposureProgram', 'WhiteBalance', 'Flash', 'ColorSpace'],
+                        translateValues: false,
+                        tiff: true,
+                        exif: true
+                    });
+                } catch (e) {
+                    console.warn("Raw EXIF取得エラー:", e);
+                }
+
+                if (parsed) {
+                    data.model = parsed.Model || '';
+                    data.make = parsed.Make || '';
+                    data.lens = parsed.LensModel || parsed.Lens || '';
+                    
+                    if (parsed.FocalLength != null) {
+                        const fl = Array.isArray(parsed.FocalLength) ? parsed.FocalLength[0] : parsed.FocalLength;
+                        if (fl) {
+                            // 小数点第3位を四捨五入して小数第2位までにする
+                            const rounded = Math.round(fl * 100) / 100;
+                            data.focalLength = `${rounded}mm`;
+                        } else {
+                            data.focalLength = '';
+                        }
+                    }
+                    
+                    if (parsed.FNumber != null) {
+                        const fn = Array.isArray(parsed.FNumber) ? parsed.FNumber[0] : parsed.FNumber;
+                        data.fNumber = fn ? `f/${fn}` : '';
+                    }
+                    
+                    if (parsed.ExposureTime != null) {
+                        const et = Array.isArray(parsed.ExposureTime) ? parsed.ExposureTime[0] : parsed.ExposureTime;
+                        if (et > 0) {
+                            const rec = 1 / et;
+                            data.exposureTime = rec >= 1 ? `1/${Math.round(rec)}s` : `${et}s`;
+                        }
+                    }
+                    
+                    if (parsed.ISO != null) {
+                        data.iso = `ISO${parsed.ISO}`;
+                    }
+
+                    if (parsed.DateTimeOriginal) {
+                        let dt = parsed.DateTimeOriginal;
+                        if (dt instanceof Date) {
+                            const pad = n => String(n).padStart(2, '0');
+                            data.dateTimeOriginal = `${dt.getFullYear()}:${pad(dt.getMonth() + 1)}:${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+                        } else if (typeof dt === 'string') {
+                            data.dateTimeOriginal = dt;
+                        }
+                    }
+
+                    if (parsed.FocalLengthIn35mmFormat != null) {
+                        data.focalLength35mm = parseInt(parsed.FocalLengthIn35mmFormat, 10);
+                    }
+
+                    if (parsed.latitude != null && parsed.longitude != null) {
+                        data.gps = {
+                            lat: parsed.latitude,
+                            lng: parsed.longitude
+                        };
+                    }
+                    
+                    if (parsed.Copyright) data.copyright = parsed.Copyright;
+                    if (parsed.Artist) data.artist = parsed.Artist;
+                    if (parsed.Software) data.software = parsed.Software;
+                    
+                    if (rawParsed) {
+                        if (rawParsed.ExposureProgram != null) data.exposureProgram = rawParsed.ExposureProgram;
+                        if (rawParsed.WhiteBalance != null) data.whiteBalance = rawParsed.WhiteBalance;
+                        if (rawParsed.Flash != null) data.flash = rawParsed.Flash;
+                        if (rawParsed.ColorSpace != null) data.colorSpace = rawParsed.ColorSpace;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(`[${file.name}] EXIF解析エラー:`, e);
+        }
+        return data;
+    }
+
+    window.copyExifToOverride = async function(key) {
+        if (!currentFiles || currentFiles.length === 0) {
+            statusText.textContent = '写真が読み込まれていないため、コピーできません。';
+            return;
+        }
+        
+        const exif = await getExifData(currentFiles[0]);
+        const valInput = document.getElementById(`ov-${key}-val`);
+        const chkInput = document.getElementById(`ov-${key}-chk`);
+        
+        let val = '';
+        if (key === 'model') val = exif.model;
+        else if (key === 'make') val = exif.make;
+        else if (key === 'lens') val = exif.lens;
+        else if (key === 'focal') val = exif.focalLength;
+        else if (key === 'fnum') val = exif.fNumber;
+        else if (key === 'exp') val = exif.exposureTime;
+        else if (key === 'iso') val = exif.iso;
+        else if (key === 'datetime') val = formatDateTime(exif.dateTimeOriginal);
+        else if (key === 'copyright') val = exif.copyright;
+
+        if (val) {
+            valInput.value = val;
+            chkInput.checked = true;
+            // ローカルストレージへの保存イベントを発火させる
+            valInput.dispatchEvent(new Event('change'));
+            chkInput.dispatchEvent(new Event('change'));
+            statusText.textContent = `写真1の情報を「${val}」としてコピーし、有効化しました。`;
+        } else {
+            statusText.textContent = '写真1から対象のEXIF情報が見つかりませんでした。';
+        }
+    };
+
+    // --- 一括操作（チェック＆コピー） ---
+    const overridesListKeys = ['model', 'make', 'lens', 'focal', 'fnum', 'exp', 'iso', 'datetime', 'copyright'];
+
+    document.getElementById('bulk-check-all').addEventListener('click', () => {
+        overridesListKeys.forEach(key => {
+            const chk = document.getElementById(`ov-${key}-chk`);
+            if (chk && !chk.disabled && !chk.checked) {
+                chk.checked = true;
+                chk.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    document.getElementById('bulk-uncheck-all').addEventListener('click', () => {
+        overridesListKeys.forEach(key => {
+            const chk = document.getElementById(`ov-${key}-chk`);
+            if (chk && !chk.disabled && chk.checked) {
+                chk.checked = false;
+                chk.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    document.getElementById('bulk-copy-all').addEventListener('click', async () => {
+        if (!currentFiles || currentFiles.length === 0) {
+            statusText.textContent = '写真が読み込まれていないため、コピーできません。';
+            return;
+        }
+        
+        statusText.textContent = '一括コピー中...';
+        const exif = await getExifData(currentFiles[0]);
+        let copiedCount = 0;
+        
+        const setVal = (key, val) => {
+            if(val) {
+                const valInput = document.getElementById(`ov-${key}-val`);
+                const chkInput = document.getElementById(`ov-${key}-chk`);
+                if (valInput && chkInput) {
+                    valInput.value = val;
+                    chkInput.checked = true;
+                    valInput.dispatchEvent(new Event('change'));
+                    chkInput.dispatchEvent(new Event('change'));
+                    copiedCount++;
+                }
+            }
+        };
+
+        setVal('model', exif.model);
+        setVal('make', exif.make);
+        setVal('lens', exif.lens);
+        setVal('focal', exif.focalLength); // 抽出時に四捨五入済みの値が入ります
+        setVal('fnum', exif.fNumber);
+        setVal('exp', exif.exposureTime);
+        setVal('iso', exif.iso);
+        setVal('datetime', formatDateTime(exif.dateTimeOriginal));
+        setVal('copyright', exif.copyright);
+
+        if (copiedCount > 0) {
+            statusText.textContent = `写真1の情報をすべてコピーし、有効化しました。（計 ${copiedCount} 項目）`;
+        } else {
+            statusText.textContent = '写真1からコピーできるEXIF情報が見つかりませんでした。';
+        }
+    });
+
+    function applyOverride(key, originalValue) {
+        const isMainOn = document.getElementById('ov-main-chk').checked;
+        const chk = document.getElementById(`ov-${key}-chk`);
+        
+        // chk要素が存在し、かつチェックが入っている場合のみ上書きする（エラー防止）
+        if (isMainOn && chk && chk.checked) {
+            const val = document.getElementById(`ov-${key}-val`).value;
+            if (val.trim() !== '') return val.replace(/\r?\n/g, ' '); // 描画エラーを防ぐため改行をスペースに置換
+        }
+        return originalValue;
+    }
+
+    function getResolvedExif(exif) {
+        // 焦点距離は上書きモードの入力値に対しても小数点第2位の四捨五入を適用する
+        let focal = applyOverride('focal', exif.focalLength);
+        if (focal) {
+            const match = String(focal).match(/(\d+(?:\.\d+)?)/);
+            if (match) {
+                const num = parseFloat(match[1]);
+                const rounded = Math.round(num * 100) / 100;
+                focal = String(focal).replace(match[1], rounded);
+            }
+        }
+
+        return {
+            model: applyOverride('model', exif.model),
+            make: applyOverride('make', exif.make),
+            lens: applyOverride('lens', exif.lens),
+            focalLength: focal,
+            fNumber: applyOverride('fnum', exif.fNumber),
+            exposureTime: applyOverride('exp', exif.exposureTime),
+            iso: applyOverride('iso', exif.iso),
+            dateTimeOriginal: applyOverride('datetime', exif.dateTimeOriginal),
+            focalLength35mm: exif.focalLength35mm,
+            gps: exif.gps,
+            exposureProgram: exif.exposureProgram,
+            whiteBalance: exif.whiteBalance,
+            flash: exif.flash,
+            colorSpace: exif.colorSpace,
+            copyright: applyOverride('copyright', exif.copyright),
+            artist: exif.artist,
+            software: exif.software
+        };
+    }
+
+    function toExifRational(value) {
+        const scaled = Math.round(value * 1000);
+        const divisor = 1000;
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const g = gcd(Math.abs(scaled), divisor);
+        return [scaled / g, divisor / g];
+    }
+
+    function parseFocalLengthForExif(str) {
+        if (!str) return null;
+        const match = String(str).match(/(\d+(?:\.\d+)?)/);
+        if (!match) return null;
+        return toExifRational(parseFloat(match[1]));
+    }
+
+    function parseFNumberForExif(str) {
+        if (!str) return null;
+        const match = String(str).match(/(\d+(?:\.\d+)?)/);
+        if (!match) return null;
+        return toExifRational(parseFloat(match[1]));
+    }
+
+    function parseExposureTimeForExif(str) {
+        if (!str) return null;
+        const text = String(str).trim();
+        const fractionMatch = text.match(/1\s*\/\s*(\d+(?:\.\d+)?)/);
+        if (fractionMatch) return [1, Math.round(parseFloat(fractionMatch[1]))];
+        const secondMatch = text.match(/(\d+(?:\.\d+)?)\s*s/i);
+        if (secondMatch) {
+            const seconds = parseFloat(secondMatch[1]);
+            if (seconds >= 1) return toExifRational(seconds);
+            return [1, Math.round(1 / seconds)];
+        }
+        return null;
+    }
+
+    function parseIsoForExif(str) {
+        if (!str) return null;
+        const match = String(str).match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    function buildExifObject(resolved, width, height) {
+        const zeroth = {};
+        const exifIfd = {};
+        const gpsIfd = {};
+
+        if (resolved.make) zeroth[piexif.ImageIFD.Make] = resolved.make;
+        if (resolved.model) zeroth[piexif.ImageIFD.Model] = resolved.model;
+        if (resolved.lens) exifIfd[piexif.ExifIFD.LensModel] = resolved.lens;
+
+        if (resolved.artist) zeroth[piexif.ImageIFD.Artist] = resolved.artist;
+        if (resolved.copyright) zeroth[piexif.ImageIFD.Copyright] = resolved.copyright;
+        if (resolved.software) zeroth[piexif.ImageIFD.Software] = resolved.software;
+        
+        // 画像はCanvas出力時に自動で正位置(上)に補正されるため、常に1(Normal)を設定して二重回転を防ぐ
+        zeroth[piexif.ImageIFD.Orientation] = 1;
+
+        const focal = parseFocalLengthForExif(resolved.focalLength);
+        if (focal) exifIfd[piexif.ExifIFD.FocalLength] = focal;
+
+        const fnum = parseFNumberForExif(resolved.fNumber);
+        if (fnum) exifIfd[piexif.ExifIFD.FNumber] = fnum;
+
+        const exp = parseExposureTimeForExif(resolved.exposureTime);
+        if (exp) exifIfd[piexif.ExifIFD.ExposureTime] = exp;
+
+        const iso = parseIsoForExif(resolved.iso);
+        if (iso) exifIfd[piexif.ExifIFD.ISOSpeedRatings] = iso;
+
+        if (resolved.dateTimeOriginal) {
+            exifIfd[piexif.ExifIFD.DateTimeOriginal] = resolved.dateTimeOriginal;
+        }
+
+        if (resolved.focalLength35mm) {
+            exifIfd[piexif.ExifIFD.FocalLengthIn35mmFilm] = resolved.focalLength35mm;
+        }
+
+        if (resolved.gps) {
+            const lat = resolved.gps.lat;
+            const lng = resolved.gps.lng;
+
+            const degToDms = (deg) => {
+                const absDeg = Math.abs(deg);
+                const d = Math.floor(absDeg);
+                const minFloat = (absDeg - d) * 60;
+                const m = Math.floor(minFloat);
+                const secFloat = (minFloat - m) * 60;
+                const s = Math.round(secFloat * 100);
+                return [[d, 1], [m, 1], [s, 100]];
+            };
+
+            gpsIfd[piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? "N" : "S";
+            gpsIfd[piexif.GPSIFD.GPSLatitude] = degToDms(lat);
+            gpsIfd[piexif.GPSIFD.GPSLongitudeRef] = lng >= 0 ? "E" : "W";
+            gpsIfd[piexif.GPSIFD.GPSLongitude] = degToDms(lng);
+            gpsIfd[piexif.GPSIFD.GPSVersionID] = [2, 2, 0, 0];
+        }
+
+        if (resolved.exposureProgram != null) exifIfd[piexif.ExifIFD.ExposureProgram] = resolved.exposureProgram;
+        if (resolved.whiteBalance != null) exifIfd[piexif.ExifIFD.WhiteBalance] = resolved.whiteBalance;
+        if (resolved.flash != null) exifIfd[piexif.ExifIFD.Flash] = resolved.flash;
+        if (resolved.colorSpace != null) exifIfd[piexif.ExifIFD.ColorSpace] = resolved.colorSpace;
+
+        if (width) exifIfd[piexif.ExifIFD.PixelXDimension] = width;
+        if (height) exifIfd[piexif.ExifIFD.PixelYDimension] = height;
+
+        return { "0th": zeroth, "Exif": exifIfd, "GPS": gpsIfd, "1st": {}, "thumbnail": null };
+    }
+
+    function embedExifInJpegDataUrl(dataUrl, resolvedExif, width, height) {
+        if (typeof piexif === 'undefined') return dataUrl;
+        try {
+            const exifObj = buildExifObject(resolvedExif, width, height);
+            const has0th = Object.keys(exifObj["0th"]).length > 0;
+            const hasExif = Object.keys(exifObj["Exif"]).length > 0;
+            if (!has0th && !hasExif) return dataUrl;
+            const exifBytes = piexif.dump(exifObj);
+            return piexif.insert(exifBytes, dataUrl);
+        } catch (e) {
+            console.error('EXIF付与エラー:', e);
+            return dataUrl;
+        }
+    }
+
+    // データURLをFileオブジェクトに変換する関数（iOS共有メニュー等でファイル名を保持するため）
+    function dataURLtoFile(dataurl, filename) {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+    }
+
+    function createFrame(file, exif) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                const s = {
+                    f1: parseFloat(document.getElementById('font-size-1').value) || 38,
+                    f2: parseFloat(document.getElementById('font-size-2').value) || (currentTemplateId === 'side-2' ? 40 : 30),
+                    f3: parseFloat(document.getElementById('font-size-3').value) || 30,
+                    f4: parseFloat(document.getElementById('font-size-4').value) || 32,
+                    c1: document.getElementById('font-color-1').value || '#121212',
+                    c2: document.getElementById('font-color-2').value || '#565656',
+                    c3: document.getElementById('font-color-3').value || '#121212',
+                    c4: document.getElementById('font-color-4').value || '#565656',
+                    t: parseFloat(document.getElementById('frame-top').value) || 4,
+                    b: parseFloat(document.getElementById('frame-bottom').value) || 12,
+                    l: parseFloat(document.getElementById('frame-left').value) || 4,
+                    r: parseFloat(document.getElementById('frame-right').value) || 4,
+                    color: document.querySelector('input[name="frame-color"]:checked').value,
+                    fontFam: document.querySelector('input[name="font-family"]:checked').value,
+                    border: document.getElementById('frame-border-chk').checked,
+                    innerBorder: document.getElementById('inner-border-chk').checked
+                };
+
+                try {
+                    await document.fonts.load(`1em "${s.fontFam}"`);
+                } catch(e) {
+                    console.warn("フォントのロードに失敗しました:", e);
+                }
+
+                const imgW = img.width;
+                const imgH = img.height;
+                const longSide = Math.max(imgW, imgH);
+
+                const padT = Math.round(longSide * (s.t / 100));
+                const padB = Math.round(longSide * (s.b / 100));
+                const padL = Math.round(longSide * (s.l / 100));
+                const padR = Math.round(longSide * (s.r / 100));
+
+                const bw = s.border ? 2 : 0; // 外枠線の幅(2px)
+                const iw = s.innerBorder ? 1 : 0; // 内枠線の幅(1px)
+
+                canvas.width = imgW + padL + padR + (bw * 2);
+                canvas.height = imgH + padT + padB + (bw * 2);
+
+                if (s.border) {
+                    ctx.fillStyle = '#646464';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(bw, bw, canvas.width - (bw * 2), canvas.height - (bw * 2));
+                } else {
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                if (s.innerBorder) {
+                    ctx.fillStyle = '#A5A5A5';
+                    ctx.fillRect(padL + bw - iw, padT + bw - iw, imgW + (iw * 2), imgH + (iw * 2));
+                }
+
+                ctx.drawImage(img, padL + bw, padT + bw, imgW, imgH);
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const baseFontSize = longSide * 0.06;
+                const fontStack = `"${s.fontFam}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif`;
+
+                const resolved = getResolvedExif(exif);
+
+                // 各キーの値を取得するヘルパーマップ
+                const itemValues = {
+                    shot_on: "Shot on",
+                    model: resolved.model || '',
+                    make: resolved.make || '',
+                    lens: resolved.lens || '',
+                    focal: resolved.focalLength || '',
+                    fnum: resolved.fNumber || '',
+                    exp: resolved.exposureTime || '',
+                    iso: resolved.iso || '',
+                    datetime: formatDateTime(resolved.dateTimeOriginal) || '',
+                    copyright: resolved.copyright || ''
+                };
+
+                // 数値系パラメータのキー一覧（隣り合う場合は半角スペース2個で自然に区切る）
+                const numParamKeys = new Set(['focal', 'fnum', 'exp', 'iso']);
+
+                // 指定した行の描画用テキストトークンを組み立てる関数
+                function buildLineTokens(lineItems, level) {
+                    const activeTokens = [];
+                    for (const item of lineItems) {
+                        if (!item.enabled) continue;
+                        const val = itemValues[item.id];
+                        if (val) activeTokens.push({ id: item.id, val: val });
+                    }
+
+                    if (activeTokens.length === 0) return [];
+
+                    const fontPx = Math.max(10, Math.round(baseFontSize * (s[`f${level}`] / 100)));
+                    
+                    let isBold = false;
+                    if (currentTemplateId === 'side-2') {
+                        isBold = (level === 1 || level === 2);
+                    } else {
+                        isBold = (level === 1);
+                    }
+                    
+                    const defaultFont = `${isBold ? '700' : '400'} ${fontPx}px ${fontStack}`;
+                    const defaultColor = s[`c${level}`];
+                    
+                    const shotOnSizeRef = (currentTemplateId === 'side-2') ? s.f4 : s[`f${level}`] - 2;
+                    const shotOnFontPx = Math.max(10, Math.round(baseFontSize * (Math.max(1, shotOnSizeRef) / 100)));
+                    const shotOnStyle = `500 ${shotOnFontPx}px ${fontStack}`;
+                    const shotOnColor = (currentTemplateId === 'side-2') ? s.c4 : s.c2;
+
+                    const tokens = [];
+                    const createRenderToken = (text, id) => {
+                        if (id === 'shot_on') {
+                            return { text: text, font: shotOnStyle, color: shotOnColor };
+                        } else {
+                            return { text: text, font: defaultFont, color: defaultColor };
+                        }
+                    };
+
+                    tokens.push(createRenderToken(activeTokens[0].val, activeTokens[0].id));
+
+                    for (let i = 1; i < activeTokens.length; i++) {
+                        const prev = activeTokens[i - 1];
+                        const curr = activeTokens[i];
+                        
+                        let separator = ' ｜ ';
+                        if (prev.id === 'shot_on') {
+                            separator = '  '; 
+                        } else if (numParamKeys.has(prev.id) && numParamKeys.has(curr.id)) {
+                            separator = '  '; 
+                        }
+
+                        tokens.push({ text: separator, font: defaultFont, color: defaultColor });
+                        tokens.push(createRenderToken(curr.val, curr.id));
+                    }
+                    return tokens;
+                }
+
+                const renderTokens = (tokens, y, align) => {
+                    if (tokens.length === 0) return;
+                    
+                    let totalWidth = 0;
+                    for (const token of tokens) {
+                        ctx.font = token.font;
+                        token.width = ctx.measureText(token.text).width;
+                        totalWidth += token.width;
+                    }
+                    
+                    let currentX;
+                    if (align === 'left') {
+                        currentX = padL + bw;
+                    } else if (align === 'right') {
+                        currentX = canvas.width - padR - bw - totalWidth;
+                    } else {
+                        currentX = (canvas.width - totalWidth) / 2;
+                    }
+                    
+                    ctx.textAlign = 'left'; 
+                    for (const token of tokens) {
+                        ctx.font = token.font;
+                        ctx.fillStyle = token.color;
+                        ctx.fillText(token.text, currentX, y);
+                        currentX += token.width;
+                    }
+                };
+
+                const bottomStartY = padT + bw + imgH;
+                const line1Y = bottomStartY + Math.round(padB * 0.42);
+                const line2Y = bottomStartY + Math.round(padB * 0.68);
+
+                if (currentTemplateId === 'side-2') {
+                    const left1 = buildLineTokens(currentItemOrder.leftLine1 || [], 1);
+                    const right1 = buildLineTokens(currentItemOrder.rightLine1 || [], 2);
+                    const left2 = buildLineTokens(currentItemOrder.leftLine2 || [], 3);
+                    const right2 = buildLineTokens(currentItemOrder.rightLine2 || [], 4);
+
+                    renderTokens(left1, line1Y, 'left');
+                    renderTokens(left2, line2Y, 'left');
+                    renderTokens(right1, line1Y, 'right');
+                    renderTokens(right2, line2Y, 'right');
+                } else {
+                    const line1Tokens = buildLineTokens(currentItemOrder.line1 || [], 1);
+                    const line2Tokens = buildLineTokens(currentItemOrder.line2 || [], 2);
+                    
+                    let align = 'center';
+                    if (currentTemplateId === 'left-2') align = 'left';
+                    if (currentTemplateId === 'right-2') align = 'right';
+
+                    renderTokens(line1Tokens, line1Y, align);
+                    renderTokens(line2Tokens, line2Y, align);
+                }
+
+                resolve(canvas);
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    generateBtn.addEventListener('click', async () => {
+        if (currentFiles.length === 0) {
+            statusText.textContent = '画像ファイルを選択してください。';
+            return;
+        }
+
+        generateBtn.disabled = true;
+        downloadBtn.style.display = 'none';
+        resultArea.innerHTML = '';
+        generatedResults = [];
+        
+        let lastCanvas = null;
+        const shouldEmbedExif = document.getElementById('exif-embed-chk').checked;
+        const isIOSDevice = isIOS(); // iOS判定を変数に保持
+        
+        for (let i = 0; i < currentFiles.length; i++) {
+            statusText.textContent = `生成中... (${i + 1} / ${currentFiles.length}枚)`;
+            const file = currentFiles[i];
+            
+            try {
+                const exif = await getExifData(file);
+                const resolvedExif = getResolvedExif(exif);
+                const canvas = await createFrame(file, exif);
+                lastCanvas = canvas;
+                
+                let dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                if (shouldEmbedExif) {
+                    dataUrl = embedExifInJpegDataUrl(dataUrl, resolvedExif, canvas.width, canvas.height);
+                }
+                const filename = `framed_${file.name}`;
+                
+                generatedResults.push({ dataUrl, filename });
+                const currentIndex = generatedResults.length - 1;
+
+                const itemContainer = document.createElement('div');
+                itemContainer.className = 'result-item';
+
+                const thumb = document.createElement('img');
+                thumb.src = dataUrl;
+                thumb.className = 'result-thumb';
+                thumb.title = 'クリックで拡大プレビュー';
+                thumb.onclick = () => openLightbox(currentIndex);
+                
+                itemContainer.appendChild(thumb);
+
+                // 個別ダウンロードボタンの追加（OS判定による出し分け）
+                const singleDlBtn = document.createElement('button');
+                singleDlBtn.className = 'single-download-btn';
+                
+                if (isIOSDevice) {
+                    singleDlBtn.textContent = '保存 / 共有する';
+                    singleDlBtn.onclick = async () => {
+                        try {
+                            const fileObj = dataURLtoFile(dataUrl, filename);
+                            // Web Share APIを使用してファイル名を維持したまま共有・保存メニューを呼び出す
+                            if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
+                                await navigator.share({
+                                    files: [fileObj],
+                                    title: filename
+                                });
+                            } else {
+                                // API非対応時のフォールバック処理
+                                const a = document.createElement('a');
+                                a.href = dataUrl;
+                                a.download = filename;
+                                a.click();
+                            }
+                        } catch (e) {
+                            console.log("共有キャンセルまたはエラー:", e);
+                        }
+                    };
+                } else {
+                    singleDlBtn.textContent = '個別ダウンロード';
+                    singleDlBtn.onclick = () => {
+                        const a = document.createElement('a');
+                        a.href = dataUrl;
+                        a.download = filename;
+                        a.click();
+                    };
+                }
+                itemContainer.appendChild(singleDlBtn);
+
+                resultArea.appendChild(itemContainer);
+                
+            } catch (err) {
+                console.error("生成エラー:", err);
+                statusText.textContent = `${file.name} の生成中にエラーが発生しました。`;
+            }
+        }
+
+        let copySuccess = false;
+        if (currentFiles.length === 1 && lastCanvas) {
+            try {
+                const blob = await new Promise(resolve => lastCanvas.toBlob(resolve, 'image/png'));
+                if (blob) {
+                    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                    copySuccess = true;
+                }
+            } catch (err) {
+                console.warn("クリップボードへのコピーがブロックされました:", err);
+            }
+        }
+
+        // メッセージの組み立て
+        let finishMessage = '生成完了！';
+        if (currentFiles.length === 1 && copySuccess) {
+            finishMessage += 'クリップボードにコピーしました！ ';
+        }
+        finishMessage += 'サムネイルをクリックすると拡大プレビューできます。';
+
+        // iOS向け追加メッセージ
+        if (isIOSDevice) {
+            finishMessage += '<br><span style="display:inline-block; margin-top:10px; font-size:13px; color:var(--text-color); font-weight:normal; background:var(--card-bg-sub); padding:6px 14px; border-radius:4px; border:1px solid var(--border-color);">📱 「保存 / 共有する」ボタンから保存してください。</span>';
+        }
+
+        statusText.innerHTML = finishMessage;
+
+        generateBtn.disabled = false;
+        
+        // iOS以外の場合のみ一括ダウンロードボタンを表示
+        if (!isIOSDevice) {
+            downloadBtn.style.display = 'block';
+            downloadBtn.textContent = currentFiles.length > 1 ? '一括ダウンロードする' : 'ダウンロードする';
+        }
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+        if (generatedResults.length === 0) return;
+        
+        downloadBtn.disabled = true;
+        const originalText = downloadBtn.textContent;
+        downloadBtn.textContent = 'ダウンロード処理中...';
+        
+        for (let i = 0; i < generatedResults.length; i++) {
+            statusText.textContent = `ダウンロード中... (${i + 1} / ${generatedResults.length}枚)`;
+            
+            const item = generatedResults[i];
+            const a = document.createElement('a');
+            a.href = item.dataUrl;
+            a.download = item.filename;
+            a.click();
+            
+            await new Promise(r => setTimeout(r, 400));
+        }
+        
+        statusText.textContent = 'すべてのダウンロードが完了しました。';
+        downloadBtn.textContent = originalText;
+        downloadBtn.disabled = false;
+    });
+
+
+</script>
+
+
+<!-- license
+MIT License
+Copyright (c) 2026 Yamashita Octopus
+Permission is hereby granted, free of charge, to any person obtaining a copy...
+-->
+
+</body>
+</html>

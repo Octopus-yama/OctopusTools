@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus Mosaic & Blur｜Octopus Tools</title>
+    <!-- piexif.js（JPEGのExif維持用：同階層に配置） -->
+    <script src="piexif.js"></script>
+    <script>
+    // アプリケーションのバージョン情報
+    const APP_INFO = {
+        name: "Octopus Mosaic & Blur",
+        version: "1.00",       // メインバージョン
+        subVersion: "8",       // 内部ビルド
+        date: "2026-09-20"     // 更新日
+        // 更新内容： バージョンの更新
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const versionEl = document.getElementById('version-display');
+        if (versionEl) {
+            versionEl.textContent = `v${APP_INFO.version}`;
+        }
+    });
+    </script>
+
+    <style>
+        :root {
+            /* メインカラー：アース黄緑 (Sage / Olive Green) */
+            --primary: #607d3b;
+            --primary-hover: #4f682f;
+            --primary-light: #f2f6ec;
+            --primary-border: #c4d7b3;
+            --primary-glow: rgba(96, 125, 59, 0.2);
+
+            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
+            --accent: #542366;
+            --accent-hover: #411a50;
+            --accent-light: #f7effa;
+            --accent-border: #dbc3e3;
+
+            /* ニュートラル・サーフェス */
+            --bg-color: #f7f8f5;
+            --card-bg: #ffffff;
+            --card-bg-sub: #f3f5f0;
+            --text-color: #2b3324;
+            --text-muted: #64705a;
+            --border-color: #e0e6d8;
+            --border-hover: #b8c8a8;
+            
+            --danger-color: #c94a4a;
+            --danger-hover: #ab3737;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
+            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
+            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ダークモード設定 */
+        [data-theme="dark"] {
+            --primary: #86ad58;
+            --primary-hover: #9bc36c;
+            --primary-light: #252e1f;
+            --primary-border: #3d4a32;
+            --primary-glow: rgba(134, 173, 88, 0.25);
+
+            --accent: #bd79d9;
+            --accent-hover: #cb90e3;
+            --accent-light: #321d38;
+            --accent-border: #573361;
+
+            --bg-color: #1e221b;
+            --card-bg: #282d24;
+            --card-bg-sub: #21251e;
+            --text-color: #ecf0e6;
+            --text-muted: #a3b098;
+            --border-color: #373f32;
+            --border-hover: #4d5746;
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            padding: 32px 16px; 
+            min-height: 100vh; 
+            transition: background-color 0.3s, color 0.3s; 
+            line-height: 1.6; 
+        }
+        
+        .container { 
+            max-width: 840px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            padding: 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-md); 
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* PC専用ワイドモード（最大2000px） */
+        .container.wide-mode {
+            max-width: 2000px;
+            width: 96vw;
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+            border-bottom: 2px solid var(--border-color); 
+            padding-bottom: 16px; 
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            letter-spacing: -0.01em; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header-icon {
+            font-size: 24px;
+            line-height: 1;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .version { 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: var(--primary); 
+            background: var(--primary-light); 
+            border: 1px solid var(--primary-border); 
+            padding: 2px 10px; 
+            border-radius: 20px; 
+        }
+
+        .wide-toggle-btn {
+            display: none;
+            cursor: pointer;
+            background: var(--card-bg-sub);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .wide-toggle-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        @media (min-width: 860px) {
+            .wide-toggle-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+        }
+        
+        .theme-toggle { 
+            cursor: pointer; 
+            background: var(--card-bg-sub); 
+            color: var(--text-color); 
+            border: 1px solid var(--border-color); 
+            padding: 6px 12px; 
+            border-radius: var(--radius-sm); 
+            font-size: 14px; 
+            transition: var(--transition); 
+        }
+        .theme-toggle:hover { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+        }
+
+        /* アップロードドロップエリア */
+        .drop-area { 
+            border: 2px dashed var(--primary-border); 
+            border-radius: var(--radius-md); 
+            padding: 36px 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            background: var(--primary-light); 
+            margin-bottom: 24px; 
+            transition: var(--transition); 
+        }
+        .drop-area:hover, .drop-area.drag-over { 
+            border-color: var(--primary); 
+            background: var(--card-bg-sub); 
+            transform: translateY(-2px); 
+            box-shadow: var(--shadow-sm); 
+        }
+        .drop-area p { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-color); 
+        }
+        .drop-area span {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 6px;
+        }
+
+        /* 編集ワークスペース */
+        #workspace {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        /* アクションバー */
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--card-bg-sub);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sub-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sub-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+        .sub-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .confirm-btn {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+        .confirm-btn:hover:not(:disabled) {
+            background: var(--primary-hover);
+            color: #ffffff;
+        }
+
+        /* ズームコントローラー */
+        .zoom-control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+        .zoom-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 42px;
+            text-align: right;
+        }
+        .zoom-slider {
+            width: 90px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* キャンバスラッパー＆スクロールコンテナ */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-height: 75vh;
+            background: #151814;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            overflow: auto;
+            text-align: center;
+            touch-action: none;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+            padding: 12px;
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+            margin: auto;
+            user-select: none;
+        }
+
+        #main-canvas {
+            display: block;
+            cursor: crosshair;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            background-color: #fff;
+            transform-origin: top left;
+        }
+
+        /* 選択枠オーバーレイ */
+        #selection-box {
+            position: absolute;
+            border: 2px dashed #ffffff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(0,0,0,0.8);
+            display: none;
+            pointer-events: none;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        #selection-box.ellipse {
+            border-radius: 50%;
+        }
+
+        /* アコーディオン */
+        .accordion { 
+            margin-bottom: 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-md); 
+            overflow: hidden; 
+            background: var(--card-bg); 
+            transition: var(--transition); 
+        }
+        .accordion:hover { 
+            border-color: var(--border-hover); 
+        }
+        .accordion-header { 
+            background: var(--card-bg-sub); 
+            padding: 14px 18px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 14px; 
+            color: var(--text-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            user-select: none; 
+            transition: var(--transition); 
+        }
+        .accordion-header:hover { 
+            background: var(--primary-light); 
+            color: var(--primary); 
+        }
+        .accordion-header span { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+            transition: var(--transition); 
+        }
+        .accordion-content { 
+            padding: 20px; 
+            display: none; 
+            background: var(--card-bg); 
+            border-top: 1px solid var(--border-color); 
+        }
+        .accordion-content.open { 
+            display: block; 
+        }
+
+        /* セグメントピッカー */
+        .setting-group-title {
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .segmented-picker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .picker-option {
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+            min-width: 110px;
+        }
+        .picker-option input[type="radio"] {
+            display: none;
+        }
+        .picker-label {
+            display: block;
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg-sub);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: var(--transition);
+            text-align: center;
+        }
+        .picker-option:hover .picker-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .picker-option input[type="radio"]:checked + .picker-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        /* スライダーフォーム */
+        .slider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: opacity 0.2s ease;
+        }
+        .slider-group.is-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .slider-group.is-disabled input[type="range"] {
+            cursor: not-allowed;
+            accent-color: #888888;
+        }
+        .slider-group.is-disabled .slider-value {
+            color: var(--text-muted);
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .slider-value {
+            font-weight: 700;
+            color: var(--primary);
+            transition: color 0.2s ease;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* 設定リセットボタン */
+        .reset-preset-btn {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-preset-btn:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+            background: rgba(201, 74, 74, 0.05);
+        }
+
+        /* メインアクションボタン */
+        .main-btn { 
+            background: var(--primary); 
+            color: #ffffff; 
+            border: none; 
+            padding: 15px 24px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            border-radius: var(--radius-md); 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 20px; 
+            transition: var(--transition); 
+            box-shadow: 0 4px 12px var(--primary-glow); 
+            letter-spacing: 0.02em; 
+        }
+        .main-btn:hover { 
+            background: var(--primary-hover); 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 18px var(--primary-glow); 
+        }
+        .main-btn:disabled { 
+            background: #999999; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+        }
+
+        .explanation { 
+            max-width: 840px; 
+            margin: 28px auto 0; 
+            background: var(--card-bg); 
+            padding: 28px 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-sm); 
+            line-height: 1.7; 
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .container.wide-mode ~ .explanation {
+            max-width: 2000px;
+        }
+
+        .usage-section h3 { 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            border-left: 4px solid var(--primary); 
+            padding-left: 10px; 
+            margin: 22px 0 10px 0; 
+            letter-spacing: 0.01em; 
+        }
+        .usage-section h3:first-child { 
+            margin-top: 0; 
+        }
+        .usage-section p { 
+            font-size: 13.5px; 
+            color: var(--text-muted); 
+            margin: 0 0 10px 0; 
+            padding-left: 1.2em; 
+            text-indent: -1.2em; 
+        } 
+        .usage-section ul { 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            margin-top: 6px; 
+            padding-left: 2.2em; 
+            line-height: 1.85; 
+        }
+        .usage-section a { 
+            color: var(--primary); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: var(--transition); 
+        }
+        .usage-section a:hover { 
+            color: var(--accent); 
+            text-decoration: underline; 
+        }
+
+        .footer { 
+            text-align: center; 
+            padding: 28px 10px 36px; 
+            color: var(--text-muted); 
+            font-size: 12px; 
+        }
+        .copyright-name { 
+            font-weight: 700; 
+            color: var(--text-color); 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-container">
+    <div class="header">
+        <h1>
+            <span class="header-icon">🧩</span>
+            Octopus Mosaic & Blur｜Octopus Tools
+        </h1>
+        <div class="header-controls">
+            <span class="version" id="version-display"></span>
+            <button class="wide-toggle-btn" id="wide-toggle-btn" title="画像エリアの幅を最大2000pxに拡大します">⤢ ワイド表示</button>
+            <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
+        </div>
+    </div>
+
+    <!-- アップロードエリア -->
+    <div class="drop-area" id="drop-area">
+        <p>ここをタップするか、画像ファイルをドラッグ＆ドロップ</p>
+        <span>JPEG / PNG / WebP / GIF 対応</span>
+        <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp, image/gif" style="display: none;">
+    </div>
+
+    <!-- 編集ワークスペース -->
+    <div id="workspace">
+        <div class="action-bar">
+            <div class="action-group">
+                <button class="sub-btn" id="undo-btn" disabled title="1つ前に戻す">↩ 戻る</button>
+                <button class="sub-btn" id="redo-btn" disabled title="やり直す">↪ 進む</button>
+                <button class="sub-btn" id="reset-btn" title="全加工をリセット">↺ リセット</button>
+            </div>
+
+            <div class="action-group">
+                <div class="zoom-control-group">
+                    <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">🔍</span>
+                    <input type="range" id="zoom-slider" class="zoom-slider" min="100" max="400" step="10" value="100">
+                    <span class="zoom-label" id="zoom-val">100%</span>
+                    <button class="sub-btn" id="zoom-reset-btn" style="padding: 2px 8px; font-size: 11px;" title="ズームを100%（標準）に戻す">リセット</button>
+                </div>
+
+                <span id="history-count" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">加工: 0件</span>
+                <button class="sub-btn confirm-btn" id="apply-btn" style="display: none;">✔ 確定する</button>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvas-container">
+            <div class="canvas-wrapper" id="canvas-wrapper">
+                <canvas id="main-canvas"></canvas>
+                <div id="selection-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. エフェクト・強度設定（一番上に配置） -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-effect-settings', this)">
+            エフェクト・強度設定 <span>▼</span>
+        </div>
+        <div class="accordion-content open" id="content-effect-settings">
+            <!-- 選択形状をエフェクト設定の先頭に配置 -->
+            <div class="setting-group-title">◆ 選択形状</div>
+            <div class="segmented-picker">
+                <label class="picker-option">
+                    <input type="radio" name="shape-type" value="rect">
+                    <span class="picker-label">■ 矩形 (四角形)</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="shape-type" value="ellipse">
+                    <span class="picker-label">● 楕円 (円形)</span>
+                </label>
+            </div>
+
+            <div class="setting-group-title">◆ 効果タイプ</div>
+            <div class="segmented-picker">
+                <label class="picker-option">
+                    <input type="radio" name="effect-type" value="mosaic">
+                    <span class="picker-label">モザイク</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="effect-type" value="blur">
+                    <span class="picker-label">ぼかし</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="effect-type" value="frosted">
+                    <span class="picker-label">すりガラス風</span>
+                </label>
+            </div>
+
+            <div class="setting-group-title">◆ 強度プリセット</div>
+            <div class="segmented-picker">
+                <label class="picker-option">
+                    <input type="radio" name="preset-strength" value="low">
+                    <span class="picker-label">弱 (小)</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="preset-strength" value="med">
+                    <span class="picker-label">中 (標準)</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="preset-strength" value="high">
+                    <span class="picker-label">強 (大)</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+                <div class="setting-group-title">◆ 詳細スライダー調整 (画像長辺に対する比率%で指定)</div>
+                <div class="slider-grid">
+                    <div class="slider-group" id="slider-block-group">
+                        <div class="slider-header">
+                            <span>モザイクサイズ (長辺比)</span>
+                            <span class="slider-value" id="val-block-size">2.5%</span>
+                        </div>
+                        <input type="range" id="input-block-size" min="0.2" max="10.0" step="0.1" value="2.5">
+                    </div>
+
+                    <div class="slider-group" id="slider-blur-group">
+                        <div class="slider-header">
+                            <span>ぼかし半径 (長辺比)</span>
+                            <span class="slider-value" id="val-blur-radius">1.2%</span>
+                        </div>
+                        <input type="range" id="input-blur-radius" min="0.1" max="5.0" step="0.1" value="1.2">
+                    </div>
+
+                    <div class="slider-group" id="slider-opacity-group">
+                        <div class="slider-header">
+                            <span>不透明度</span>
+                            <span class="slider-value" id="val-opacity">100%</span>
+                        </div>
+                        <input type="range" id="input-opacity" min="10" max="100" step="1" value="100">
+                    </div>
+                </div>
+
+                <div style="margin-top: 18px; text-align: right;">
+                    <button type="button" class="reset-preset-btn" id="reset-presets-btn" title="スライダーの調整値をすべて初期設定に戻します">
+                        ↺ 設定をデフォルト値に戻す
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 操作設定（エフェクト設定の下に配置） -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-operation-settings', this)">
+            操作設定 <span>▼</span>
+        </div>
+        <div class="accordion-content open" id="content-operation-settings">
+            <div class="setting-group-title">◆ 確定方式</div>
+            <div class="segmented-picker">
+                <label class="picker-option">
+                    <input type="radio" name="confirm-mode" value="instant" checked>
+                    <span class="picker-label">即時確定モード (離した瞬間適用)</span>
+                </label>
+                <label class="picker-option">
+                    <input type="radio" name="confirm-mode" value="manual">
+                    <span class="picker-label">調整確定モード (枠確認後に確定)</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- メイン保存ボタン -->
+    <button id="save-btn" class="main-btn" disabled>加工した画像を保存する</button>
+    <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
+</div>
+
+<div class="explanation">
+    <div class="usage-section">
+        <h3> 本ツールについて</h3>
+        <p>・画像の読み込みやモザイク・ぼかし処理などの画像加工はすべてブラウザ内（ローカル）で実施しています。<br>サーバ等へのアップロードは一切行われません。</p>
+        <p>・サイズ設定は解像度に左右されない「画像長辺比(%)」を採用しているため、高画素な一眼写真でもWEB画像でも意図通りの効果がかかります。</p>
+        <p>・JPEG画像の場合は、元ファイルに含まれるExifメタデータ（撮影日時やカメラ情報等）を維持したまま書き出します。</p>
+
+        <h3> 使い方</h3>
+        <p>・画像をアップロード後、画像上を指やマウスでドラッグして範囲を選択します。</p>
+        <p>・拡大スライダーやスマホのピンチ操作で画像を拡大すると、細部まで正確にモザイクをかけられます。</p>
+        <p>・「100%リセット」ボタンを押すと、ワンタップで標準の全体表示に戻ります。</p>
+        <p>・PCではヘッダーの「⤢ ワイド表示」ボタンを押すことで、最大2000pxの幅広レイアウトに拡張できます。</p>
+        <p>・スライダーの数値を初期状態に戻したい場合は、エフェクト設定内の「↺ 設定をデフォルト値に戻す」ボタンを押してください。</p>
+        <p>・間違えた場合は、上部のアクションバーからいつでも「戻る（Undo）」「進む（Redo）」が可能です。</p>
+
+        <h3> ライセンスについて</h3>
+        <p>・本ツールでは、画像の処理やEXIF情報の処理のためにjsフレームワークを利用しています。著作権およびライセンスは、それぞれの権利者に帰属します。</p>
+        <ul>
+            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)</li>
+        </ul>
+    </div>
+</div>
+
+<footer class="footer usage-section">
+    © 2026 <span class="copyright-name">Octopus Tools</span> ／ MIT License
+</footer>
+
+<script>
+// --- iOS / iPadOS 判定 ---
+const isIOS = () => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipod/.test(ua)) return true;
+    if (/ipad/.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+    return false;
+};
+
+// --- テーマ切り替え ---
+const themeBtn = document.getElementById('theme-btn');
+let isDark = localStorage.getItem('theme') === 'dark';
+const applyTheme = () => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    themeBtn.textContent = isDark ? '☀️' : '🌙';
+};
+applyTheme();
+themeBtn.addEventListener('click', () => {
+    isDark = !isDark;
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    applyTheme();
+});
+
+// --- PC向けワイド表示（最大2000px）切り替え ---
+const mainContainer = document.getElementById('main-container');
+const wideToggleBtn = document.getElementById('wide-toggle-btn');
+let isWideMode = localStorage.getItem('mosaic_wide_mode') === 'true';
+
+const applyWideMode = () => {
+    if (isWideMode) {
+        mainContainer.classList.add('wide-mode');
+        wideToggleBtn.textContent = '⤡ 標準幅に戻す';
+    } else {
+        mainContainer.classList.remove('wide-mode');
+        wideToggleBtn.textContent = '⤢ ワイド表示';
+    }
+    if (originalImage) {
+        setupCanvasDimensions();
+        redrawCanvas();
+    }
+};
+
+wideToggleBtn.addEventListener('click', () => {
+    isWideMode = !isWideMode;
+    localStorage.setItem('mosaic_wide_mode', isWideMode ? 'true' : 'false');
+    applyWideMode();
+});
+
+// --- アコーディオン制御 ---
+window.toggleAccordion = function(contentId, headerEl) {
+    const content = document.getElementById(contentId);
+    content.classList.toggle('open');
+    const span = headerEl.querySelector('span');
+    span.textContent = content.classList.contains('open') ? '▲' : '▼';
+};
+
+// --- デフォルト値テーブル ---
+const DEFAULT_PRESET_VALUES = {
+    mosaic: {
+        low:  { blockPercent: 1.0, blurPercent: 0.0, opacity: 100 },
+        med:  { blockPercent: 2.5, blurPercent: 0.0, opacity: 100 },
+        high: { blockPercent: 5.0, blurPercent: 0.0, opacity: 100 }
+    },
+    blur: {
+        low:  { blockPercent: 0.0, blurPercent: 0.5, opacity: 100 },
+        med:  { blockPercent: 0.0, blurPercent: 1.2, opacity: 100 },
+        high: { blockPercent: 0.0, blurPercent: 3.0, opacity: 100 }
+    },
+    frosted: {
+        low:  { blockPercent: 1.0, blurPercent: 0.5, opacity: 85 },
+        med:  { blockPercent: 2.5, blurPercent: 1.2, opacity: 90 },
+        high: { blockPercent: 5.0, blurPercent: 3.0, opacity: 95 }
+    }
+};
+
+if (!localStorage.getItem('v006_migrated_presets')) {
+    localStorage.setItem('mode_confirm-mode', 'instant');
+    localStorage.setItem('v006_migrated_presets', 'true');
+}
+
+function loadPresetValues() {
+    const saved = localStorage.getItem('mosaic_custom_presets');
+    if (!saved) return JSON.parse(JSON.stringify(DEFAULT_PRESET_VALUES));
+    try {
+        const parsed = JSON.parse(saved);
+        const merged = JSON.parse(JSON.stringify(DEFAULT_PRESET_VALUES));
+        for (const eff of ['mosaic', 'blur', 'frosted']) {
+            for (const str of ['low', 'med', 'high']) {
+                if (parsed[eff] && parsed[eff][str]) {
+                    merged[eff][str] = Object.assign({}, merged[eff][str], parsed[eff][str]);
+                }
+            }
+        }
+        return merged;
+    } catch (e) {
+        return JSON.parse(JSON.stringify(DEFAULT_PRESET_VALUES));
+    }
+}
+
+let presetValues = loadPresetValues();
+
+function savePresetValues() {
+    localStorage.setItem('mosaic_custom_presets', JSON.stringify(presetValues));
+}
+
+// --- グローバル状態管理 ---
+let originalImage = null;
+let originalRawDataUrl = null;
+let originalMimeType = 'image/jpeg';
+let originalFileName = 'image.jpg';
+
+let displayScale = 1.0;
+let baseCanvasWidth = 0;
+let baseCanvasHeight = 0;
+let zoomLevel = 1.0;
+
+let historyStack = [];
+let historyIndex = -1;
+
+let currentSelection = null;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+// --- DOM要素 ---
+const dropArea = document.getElementById('drop-area');
+const fileInput = document.getElementById('file-input');
+const workspace = document.getElementById('workspace');
+const canvasContainer = document.getElementById('canvas-container');
+const canvasWrapper = document.getElementById('canvas-wrapper');
+const mainCanvas = document.getElementById('main-canvas');
+const ctx = mainCanvas.getContext('2d');
+const selectionBox = document.getElementById('selection-box');
+
+const undoBtn = document.getElementById('undo-btn');
+const redoBtn = document.getElementById('redo-btn');
+const resetBtn = document.getElementById('reset-btn');
+const applyBtn = document.getElementById('apply-btn');
+const historyCountEl = document.getElementById('history-count');
+const saveBtn = document.getElementById('save-btn');
+const statusText = document.getElementById('status-text');
+
+const zoomSlider = document.getElementById('zoom-slider');
+const zoomVal = document.getElementById('zoom-val');
+const zoomResetBtn = document.getElementById('zoom-reset-btn');
+
+const blockGroup = document.getElementById('slider-block-group');
+const blurGroup = document.getElementById('slider-blur-group');
+const opacityGroup = document.getElementById('slider-opacity-group');
+
+const blockSlider = document.getElementById('input-block-size');
+const blurSlider = document.getElementById('input-blur-radius');
+const opacitySlider = document.getElementById('input-opacity');
+const valBlockSize = document.getElementById('val-block-size');
+const valBlurRadius = document.getElementById('val-blur-radius');
+const valOpacity = document.getElementById('val-opacity');
+const resetPresetsBtn = document.getElementById('reset-presets-btn');
+
+function getActiveEffectType() {
+    const el = document.querySelector('input[name="effect-type"]:checked');
+    return el ? el.value : 'mosaic';
+}
+function getActivePresetStrength() {
+    const el = document.querySelector('input[name="preset-strength"]:checked');
+    return el ? el.value : 'med';
+}
+function getActiveShapeType() {
+    const el = document.querySelector('input[name="shape-type"]:checked');
+    return el ? el.value : 'rect';
+}
+function getActiveConfirmMode() {
+    const el = document.querySelector('input[name="confirm-mode"]:checked');
+    return el ? el.value : 'instant';
+}
+
+function restoreModeSelections() {
+    const shape = localStorage.getItem('mode_shape-type') || 'rect';
+    const confirm = localStorage.getItem('mode_confirm-mode') || 'instant';
+    const effect = localStorage.getItem('mode_effect-type') || 'mosaic';
+    const strength = localStorage.getItem('mode_preset-strength') || 'med';
+
+    const shapeEl = document.querySelector(`input[name="shape-type"][value="${shape}"]`);
+    if (shapeEl) shapeEl.checked = true;
+
+    const confirmEl = document.querySelector(`input[name="confirm-mode"][value="${confirm}"]`);
+    if (confirmEl) confirmEl.checked = true;
+
+    const effectEl = document.querySelector(`input[name="effect-type"][value="${effect}"]`);
+    if (effectEl) effectEl.checked = true;
+
+    const strengthEl = document.querySelector(`input[name="preset-strength"][value="${strength}"]`);
+    if (strengthEl) strengthEl.checked = true;
+}
+
+function updateSliderAvailability() {
+    const effect = getActiveEffectType();
+
+    if (effect === 'mosaic') {
+        blockGroup.classList.remove('is-disabled');
+        blockSlider.disabled = false;
+        blurGroup.classList.add('is-disabled');
+        blurSlider.disabled = true;
+        opacityGroup.classList.remove('is-disabled');
+        opacitySlider.disabled = false;
+    } else if (effect === 'blur') {
+        blockGroup.classList.add('is-disabled');
+        blockSlider.disabled = true;
+        blurGroup.classList.remove('is-disabled');
+        blurSlider.disabled = false;
+        opacityGroup.classList.remove('is-disabled');
+        opacitySlider.disabled = false;
+    } else {
+        blockGroup.classList.remove('is-disabled');
+        blockSlider.disabled = false;
+        blurGroup.classList.remove('is-disabled');
+        blurSlider.disabled = false;
+        opacityGroup.classList.remove('is-disabled');
+        opacitySlider.disabled = false;
+    }
+}
+
+function applyPresetToSliders() {
+    const effect = getActiveEffectType();
+    const preset = getActivePresetStrength();
+    const config = presetValues[effect][preset];
+
+    blockSlider.value = config.blockPercent;
+    blurSlider.value = config.blurPercent;
+    opacitySlider.value = config.opacity;
+
+    updateSliderAvailability();
+    updateSliderDisplays();
+}
+
+function updateSliderDisplays() {
+    const effect = getActiveEffectType();
+
+    if (effect === 'blur') {
+        valBlockSize.textContent = '無効';
+    } else {
+        valBlockSize.textContent = `${parseFloat(blockSlider.value).toFixed(1)}%`;
+    }
+
+    if (effect === 'mosaic') {
+        valBlurRadius.textContent = '無効';
+    } else {
+        valBlurRadius.textContent = `${parseFloat(blurSlider.value).toFixed(1)}%`;
+    }
+
+    valOpacity.textContent = `${opacitySlider.value}%`;
+}
+
+function onSliderChanged() {
+    const effect = getActiveEffectType();
+    const preset = getActivePresetStrength();
+
+    presetValues[effect][preset] = {
+        blockPercent: parseFloat(blockSlider.value),
+        blurPercent: parseFloat(blurSlider.value),
+        opacity: parseFloat(opacitySlider.value)
+    };
+
+    savePresetValues();
+    updateSliderDisplays();
+}
+
+[blockSlider, blurSlider, opacitySlider].forEach(slider => {
+    slider.addEventListener('input', onSliderChanged);
+});
+
+// 設定を初期デフォルト値に戻す処理
+resetPresetsBtn.addEventListener('click', () => {
+    if (confirm('モザイクやぼかしの調整値をすべて初期設定に戻しますか？')) {
+        presetValues = JSON.parse(JSON.stringify(DEFAULT_PRESET_VALUES));
+        localStorage.removeItem('mosaic_custom_presets');
+        applyPresetToSliders();
+        statusText.textContent = 'エフェクトの調整値を初期設定に戻しました。';
+    }
+});
+
+function setupRadioPersistence(name) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            localStorage.setItem(`mode_${name}`, e.target.value);
+            if (name === 'effect-type' || name === 'preset-strength') {
+                applyPresetToSliders();
+            }
+            if (name === 'confirm-mode' && e.target.value === 'instant' && currentSelection) {
+                applyCurrentSelection();
+            }
+        });
+    });
+}
+
+setupRadioPersistence('shape-type');
+setupRadioPersistence('confirm-mode');
+setupRadioPersistence('effect-type');
+setupRadioPersistence('preset-strength');
+
+restoreModeSelections();
+applyPresetToSliders();
+applyWideMode();
+
+// --- ズーム機能の実装 ---
+function setZoom(level) {
+    zoomLevel = Math.max(1.0, Math.min(4.0, level));
+    const percent = Math.round(zoomLevel * 100);
+    zoomSlider.value = percent;
+    zoomVal.textContent = `${percent}%`;
+
+    mainCanvas.style.width = `${Math.round(baseCanvasWidth * zoomLevel)}px`;
+    mainCanvas.style.height = `${Math.round(baseCanvasHeight * zoomLevel)}px`;
+
+    if (currentSelection) {
+        updateSelectionBox();
+    }
+}
+
+zoomSlider.addEventListener('input', (e) => {
+    setZoom(parseFloat(e.target.value) / 100);
+});
+
+zoomResetBtn.addEventListener('click', () => {
+    setZoom(1.0);
+    canvasContainer.scrollLeft = 0;
+    canvasContainer.scrollTop = 0;
+});
+
+// スマホ向けピンチイン・ピンチアウト処理
+let initialPinchDistance = 0;
+let initialPinchZoom = 1.0;
+
+canvasContainer.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+        if (isDragging) {
+            isDragging = false;
+            currentSelection = null;
+            hideSelectionBox();
+        }
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        initialPinchZoom = zoomLevel;
+    }
+}, { passive: false });
+
+canvasContainer.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && initialPinchDistance > 0) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const scaleChange = currentDist / initialPinchDistance;
+        setZoom(initialPinchZoom * scaleChange);
+    }
+}, { passive: false });
+
+canvasContainer.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+        initialPinchDistance = 0;
+    }
+}, { passive: true });
+
+// --- ファイル読み込み ---
+dropArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('drag-over');
+});
+dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('drag-over');
+});
+dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+        statusText.textContent = '画像ファイルを選択してください。';
+        return;
+    }
+
+    originalMimeType = file.type;
+    originalFileName = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        originalRawDataUrl = e.target.result;
+        const img = new Image();
+        img.onload = () => {
+            originalImage = img;
+            initWorkspace();
+        };
+        img.src = originalRawDataUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
+function initWorkspace() {
+    workspace.style.display = 'block';
+    saveBtn.disabled = false;
+    historyStack = [];
+    historyIndex = -1;
+    currentSelection = null;
+    hideSelectionBox();
+
+    setZoom(1.0);
+    setupCanvasDimensions();
+    redrawCanvas();
+    updateHistoryUI();
+    statusText.textContent = 'ドラッグしてモザイク・ぼかしを入れる範囲を選択してください。';
+}
+
+function setupCanvasDimensions() {
+    const containerWidth = (canvasContainer.clientWidth - 24) || 800;
+    const maxPreviewHeight = window.innerHeight * 0.70;
+
+    let w = originalImage.naturalWidth;
+    let h = originalImage.naturalHeight;
+
+    let scale = Math.min(1.0, containerWidth / w);
+    if (h * scale > maxPreviewHeight) {
+        scale = maxPreviewHeight / h;
+    }
+
+    displayScale = scale;
+    baseCanvasWidth = Math.round(w * displayScale);
+    baseCanvasHeight = Math.round(h * displayScale);
+
+    mainCanvas.width = baseCanvasWidth;
+    mainCanvas.height = baseCanvasHeight;
+
+    mainCanvas.style.width = `${Math.round(baseCanvasWidth * zoomLevel)}px`;
+    mainCanvas.style.height = `${Math.round(baseCanvasHeight * zoomLevel)}px`;
+}
+
+window.addEventListener('resize', () => {
+    if (!originalImage) return;
+    setupCanvasDimensions();
+    redrawCanvas();
+});
+
+// --- 再描画エンジン ---
+function redrawCanvas() {
+    if (!originalImage) return;
+
+    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    ctx.drawImage(originalImage, 0, 0, mainCanvas.width, mainCanvas.height);
+
+    for (let i = 0; i <= historyIndex; i++) {
+        const item = historyStack[i];
+        applyEffectToCanvas(ctx, item, displayScale);
+    }
+}
+
+function applyEffectToCanvas(targetCtx, item, scale) {
+    const rx = Math.round(item.x * scale);
+    const ry = Math.round(item.y * scale);
+    const rw = Math.round(item.w * scale);
+    const rh = Math.round(item.h * scale);
+
+    if (rw <= 0 || rh <= 0) return;
+
+    const baseDimension = Math.max(targetCtx.canvas.width, targetCtx.canvas.height);
+
+    targetCtx.save();
+
+    targetCtx.beginPath();
+    if (item.shape === 'ellipse') {
+        const cx = rx + rw / 2;
+        const cy = ry + rh / 2;
+        targetCtx.ellipse(cx, cy, rw / 2, rh / 2, 0, 0, Math.PI * 2);
+    } else {
+        targetCtx.rect(rx, ry, rw, rh);
+    }
+    targetCtx.clip();
+
+    targetCtx.globalAlpha = item.opacity / 100;
+
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = rw;
+    offCanvas.height = rh;
+    const offCtx = offCanvas.getContext('2d');
+
+    if (item.effect === 'mosaic' || item.effect === 'frosted') {
+        const blk = Math.max(2, Math.round(baseDimension * (item.blockPercent / 100)));
+        const smallW = Math.max(1, Math.floor(rw / blk));
+        const smallH = Math.max(1, Math.floor(rh / blk));
+
+        const smallCanvas = document.createElement('canvas');
+        smallCanvas.width = smallW;
+        smallCanvas.height = smallH;
+        const smallCtx = smallCanvas.getContext('2d');
+
+        smallCtx.drawImage(targetCtx.canvas, rx, ry, rw, rh, 0, 0, smallW, smallH);
+
+        offCtx.imageSmoothingEnabled = false;
+        offCtx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, rw, rh);
+    } else {
+        offCtx.drawImage(targetCtx.canvas, rx, ry, rw, rh, 0, 0, rw, rh);
+    }
+
+    if ((item.effect === 'blur' || item.effect === 'frosted') && item.blurPercent > 0) {
+        const blurPx = Math.max(1, Math.round(baseDimension * (item.blurPercent / 100)));
+        const blurCanvas = document.createElement('canvas');
+        blurCanvas.width = rw;
+        blurCanvas.height = rh;
+        const bCtx = blurCanvas.getContext('2d');
+
+        bCtx.filter = `blur(${blurPx}px)`;
+        bCtx.drawImage(offCanvas, 0, 0);
+
+        offCtx.clearRect(0, 0, rw, rh);
+        offCtx.drawImage(blurCanvas, 0, 0);
+    }
+
+    targetCtx.drawImage(offCanvas, rx, ry);
+    targetCtx.restore();
+}
+
+// --- ポインター操作制御 ---
+mainCanvas.addEventListener('pointerdown', handlePointerDown);
+window.addEventListener('pointermove', handlePointerMove);
+window.addEventListener('pointerup', handlePointerUp);
+window.addEventListener('pointercancel', handlePointerUp);
+
+function getCanvasPoint(e) {
+    const rect = mainCanvas.getBoundingClientRect();
+    const scaleX = mainCanvas.width / rect.width;
+    const scaleY = mainCanvas.height / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    return {
+        x: Math.max(0, Math.min(canvasX, mainCanvas.width)),
+        y: Math.max(0, Math.min(canvasY, mainCanvas.height))
+    };
+}
+
+function handlePointerDown(e) {
+    if (!originalImage) return;
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
+
+    isDragging = true;
+    const pt = getCanvasPoint(e);
+    dragStartX = pt.x;
+    dragStartY = pt.y;
+
+    currentSelection = {
+        startX: dragStartX,
+        startY: dragStartY,
+        endX: dragStartX,
+        endY: dragStartY
+    };
+
+    updateSelectionBox();
+    mainCanvas.setPointerCapture(e.pointerId);
+}
+
+function handlePointerMove(e) {
+    if (!isDragging) return;
+    const pt = getCanvasPoint(e);
+    currentSelection.endX = pt.x;
+    currentSelection.endY = pt.y;
+    updateSelectionBox();
+}
+
+function handlePointerUp(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    try {
+        mainCanvas.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+
+    const sel = getNormalizedSelection();
+    if (sel.w < 6 || sel.h < 6) {
+        hideSelectionBox();
+        currentSelection = null;
+        return;
+    }
+
+    if (getActiveConfirmMode() === 'instant') {
+        applyCurrentSelection();
+    } else {
+        applyBtn.style.display = 'inline-flex';
+        statusText.textContent = '範囲を確認し、「確定する」ボタンを押してください。';
+    }
+}
+
+function getNormalizedSelection() {
+    if (!currentSelection) return { x: 0, y: 0, w: 0, h: 0 };
+    const x = Math.min(currentSelection.startX, currentSelection.endX);
+    const y = Math.min(currentSelection.startY, currentSelection.endY);
+    const w = Math.abs(currentSelection.endX - currentSelection.startX);
+    const h = Math.abs(currentSelection.endY - currentSelection.startY);
+    return { x, y, w, h };
+}
+
+function updateSelectionBox() {
+    if (!currentSelection) return;
+    const sel = getNormalizedSelection();
+    const shape = getActiveShapeType();
+
+    selectionBox.style.display = 'block';
+    selectionBox.style.left = `${Math.round(sel.x * zoomLevel)}px`;
+    selectionBox.style.top = `${Math.round(sel.y * zoomLevel)}px`;
+    selectionBox.style.width = `${Math.round(sel.w * zoomLevel)}px`;
+    selectionBox.style.height = `${Math.round(sel.h * zoomLevel)}px`;
+
+    if (shape === 'ellipse') {
+        selectionBox.classList.add('ellipse');
+    } else {
+        selectionBox.classList.remove('ellipse');
+    }
+}
+
+function hideSelectionBox() {
+    selectionBox.style.display = 'none';
+    applyBtn.style.display = 'none';
+}
+
+function applyCurrentSelection() {
+    if (!currentSelection) return;
+    const sel = getNormalizedSelection();
+    if (sel.w < 6 || sel.h < 6) {
+        hideSelectionBox();
+        currentSelection = null;
+        return;
+    }
+
+    const eff = getActiveEffectType();
+    const originalParam = {
+        shape: getActiveShapeType(),
+        effect: eff,
+        blockPercent: (eff === 'blur') ? 0 : parseFloat(blockSlider.value),
+        blurPercent: (eff === 'mosaic') ? 0 : parseFloat(blurSlider.value),
+        opacity: parseFloat(opacitySlider.value),
+        x: sel.x / displayScale,
+        y: sel.y / displayScale,
+        w: sel.w / displayScale,
+        h: sel.h / displayScale
+    };
+
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    historyStack.push(originalParam);
+    if (historyStack.length > 30) {
+        historyStack.shift();
+    } else {
+        historyIndex++;
+    }
+
+    currentSelection = null;
+    hideSelectionBox();
+
+    redrawCanvas();
+    updateHistoryUI();
+    statusText.textContent = '加工を適用しました。続けて範囲を選択できます。';
+}
+
+applyBtn.addEventListener('click', () => {
+    applyCurrentSelection();
+});
+
+// --- Undo / Redo / Reset 操作 ---
+undoBtn.addEventListener('click', () => {
+    if (historyIndex >= 0) {
+        historyIndex--;
+        hideSelectionBox();
+        currentSelection = null;
+        redrawCanvas();
+        updateHistoryUI();
+    }
+});
+
+redoBtn.addEventListener('click', () => {
+    if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        hideSelectionBox();
+        currentSelection = null;
+        redrawCanvas();
+        updateHistoryUI();
+    }
+});
+
+resetBtn.addEventListener('click', () => {
+    if (historyStack.length === 0) return;
+    if (confirm('すべての加工をリセットして初期状態に戻しますか？')) {
+        historyStack = [];
+        historyIndex = -1;
+        hideSelectionBox();
+        currentSelection = null;
+        redrawCanvas();
+        updateHistoryUI();
+        statusText.textContent = '加工をすべてリセットしました。';
+    }
+});
+
+function updateHistoryUI() {
+    undoBtn.disabled = historyIndex < 0;
+    redoBtn.disabled = historyIndex >= historyStack.length - 1;
+    historyCountEl.textContent = `加工: ${historyIndex + 1}件`;
+}
+
+// --- 保存・エクスポート処理 ---
+saveBtn.addEventListener('click', async () => {
+    if (!originalImage) return;
+
+    saveBtn.disabled = true;
+    statusText.textContent = '元解像度で最高画質レンダリング中...';
+
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = originalImage.naturalWidth;
+    fullCanvas.height = originalImage.naturalHeight;
+    const fullCtx = fullCanvas.getContext('2d');
+
+    fullCtx.drawImage(originalImage, 0, 0);
+
+    for (let i = 0; i <= historyIndex; i++) {
+        applyEffectToCanvas(fullCtx, historyStack[i], 1.0);
+    }
+
+    let outputDataUrl = fullCanvas.toDataURL(originalMimeType, 0.95);
+
+    if (originalMimeType === 'image/jpeg' && typeof piexif !== 'undefined' && originalRawDataUrl) {
+        try {
+            const rawExif = piexif.load(originalRawDataUrl);
+            if (rawExif && (Object.keys(rawExif["0th"]).length > 0 || Object.keys(rawExif["Exif"]).length > 0)) {
+                rawExif["0th"][piexif.ImageIFD.Orientation] = 1;
+                const exifBytes = piexif.dump(rawExif);
+                outputDataUrl = piexif.insert(exifBytes, outputDataUrl);
+            }
+        } catch (exifErr) {
+            console.warn('Exif再結合をスキップしました:', exifErr);
+        }
+    }
+
+    const exportFileName = `edited_${originalFileName}`;
+
+    if (isIOS() && navigator.share) {
+        try {
+            const blob = await (await fetch(outputDataUrl)).blob();
+            const file = new File([blob], exportFileName, { type: originalMimeType });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: exportFileName
+                });
+                statusText.textContent = '共有・保存ダイアログを開きました。';
+                saveBtn.disabled = false;
+                return;
+            }
+        } catch (shareErr) {
+            console.log('共有キャンセルまたは未対応:', shareErr);
+        }
+    }
+
+    const link = document.createElement('a');
+    link.href = outputDataUrl;
+    link.download = exportFileName;
+    link.click();
+
+    try {
+        fullCanvas.toBlob(async (blob) => {
+            if (blob && navigator.clipboard && navigator.clipboard.write) {
+                await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                statusText.textContent = '画像を保存しました！（クリップボードにもコピー完了）';
+            } else {
+                statusText.textContent = '画像を保存しました！';
+            }
+            saveBtn.disabled = false;
+        }, 'image/png');
+    } catch (e) {
+        statusText.textContent = '画像を保存しました！';
+        saveBtn.disabled = false;
+    }
+});
+</script>
+
+</body>
+</html>
