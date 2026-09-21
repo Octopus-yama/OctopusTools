@@ -9,23 +9,8 @@
     <script src="full.umd.js"></script>
     <script src="piexif.min.js"></script>
     <script src="piexif.js"></script>
-    <script>
-    // アプリケーションのバージョン情報
-    const APP_INFO = {
-        version: "1.02",       // メインバージョン（画面表示用）
-        subVersion: "121",     // サブバージョン（内部ビルド番号）
-        date: "2026-09-20"     // 最終更新日
-        // 更新内容： ヘッダー追加
-    };
-
-    // DOM読み込み完了時にバージョン表示を自動反映
-    document.addEventListener('DOMContentLoaded', () => {
-        const versionEl = document.getElementById('version-display');
-        if (versionEl) {
-            versionEl.textContent = `v${APP_INFO.version}`;
-        }
-    });
-    </script>
+    <!-- 共通管理スクリプト -->
+    <script src="common.js"></script>
 
     <style>
         :root {
@@ -999,12 +984,8 @@
         <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
     </div>
 
-    <!-- 共通ナビゲーション -->
-    <nav class="global-nav" aria-label="ツール切り替え">
-        <a href="index.html" class="nav-item"><span>🐙</span> TOP</a>
-        <a href="ExifFrame.html" class="nav-item active"><span>📷</span> EXIF Frame</a>
-        <a href="MosaicBlur.html" class="nav-item"><span>🧩</span> Mosaic & Blur</a>
-    </nav>
+    <!-- 共通ナビゲーション（common.jsから自動描画） -->
+    <nav id="global-nav"></nav>
 
     <div class="drop-area" id="drop-area">
         <p>ここをタップするか、画像ファイルをドラッグ＆ドロップして追加（最大20枚）</p>

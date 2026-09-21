@@ -3,26 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octopus Tools｜写真・画像加工 Webツールポータル</title>
-    <link rel="icon" href="img/Exif_Frame_Tool_icon.ico" type="image/png">
+    <title>Octopus Tools｜写真・画像加工 Webツール</title>
+    <link rel="icon" href="img/icon_Octopus_丸.ico" type="image/png">
     <meta name="description" content="写真や画像の加工をブラウザローカル環境で安全かつ手軽に行えるWebツールコレクション。" />
-    <script>
-    // ポータルアプリケーションのバージョン情報
-    const APP_INFO = {
-        name: "Octopus Tools",
-        version: "1.02",       // メインバージョン
-        subVersion: "3",       // 内部ビルド
-        date: "2026-09-20"     // 更新日
-        // 更新内容： 共通ナビゲーション導入、ポータルアクセス用QRコードの追加
-    };
+    <!-- ファビコン指定 -->
+    <link rel="icon" href="img/icon_Octopus_Yamashita_03.ico" type="image/x-icon">
+    <!-- 共通管理スクリプト -->
+    <script src="common.js"></script>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const versionEl = document.getElementById('version-display');
-        if (versionEl) {
-            versionEl.textContent = `v${APP_INFO.version}`;
-        }
-    });
-    </script>
 
     <style>
         :root {
@@ -129,8 +117,11 @@
             gap: 10px;
         }
         .header-icon {
-            font-size: 26px;
-            line-height: 1;
+            width: 46px;
+            height: 46px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
         }
         .header-controls {
             display: flex;
@@ -431,7 +422,7 @@
 <div class="container">
     <div class="header">
         <h1>
-            <span class="header-icon">🐙</span>
+            <img src="img/icon_Octopus_丸.png" alt="Octopusアイコン" class="header-icon">
             Octopus Tools
         </h1>
         <div class="header-controls">
@@ -440,12 +431,8 @@
         </div>
     </div>
 
-    <!-- 共通ナビゲーション -->
-    <nav class="global-nav" aria-label="ツール切り替え">
-        <a href="index.html" class="nav-item active"><span>🐙</span> TOP</a>
-        <a href="ExifFrame.html" class="nav-item"><span>📷</span> EXIF Frame</a>
-        <a href="MosaicBlur.html" class="nav-item"><span>🧩</span> Mosaic & Blur</a>
-    </nav>
+    <!-- 共通ナビゲーション（common.jsから自動描画） -->
+    <nav id="global-nav"></nav>
 
     <div class="portal-intro">
         写真や画像の各種編集を、ブラウザ完結で安全・快適に行えるWebツールコレクションです。画像データを外部サーバーへ送信することなく、すべての処理をお使いの端末内（ローカル）で行います。
@@ -480,7 +467,9 @@
         <div class="tool-card">
             <div>
                 <div class="tool-card-header">
-                    <div class="tool-card-icon">🧩</div>
+                                        <div class="tool-card-icon">
+                        <img src="img/Exif_Frame_Tool_icon.png" alt="Mosaic & Blur アイコン" onerror="this.parentElement.innerHTML='🧩';">
+                    </div>
                     <div class="tool-card-title">Octopus Mosaic & Blur</div>
                 </div>
                 <div class="tool-card-desc">

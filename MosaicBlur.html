@@ -3,26 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octopus Mosaic & Blur｜画像モザイク・ぼかしツール</title>
+    <title>Octopus Mosaic & Blur｜Octopus Tools</title>
+    <!-- ファビコン指定 -->
+    <link rel="icon" href="img/Mosaic_Blur_Tool_icon.ico" type="image/x-icon">
     <!-- piexif.js（JPEGのExif維持用：同階層に配置） -->
     <script src="piexif.js"></script>
-    <script>
-    // アプリケーションのバージョン情報
-    const APP_INFO = {
-        name: "Octopus Mosaic & Blur",
-        version: "1.02",       // メインバージョン
-        subVersion: "102",     // 内部ビルド
-        date: "2026-09-20"     // 更新日
-        // 更新内容： iOS環境（WebKit）におけるCanvas filter未対応に伴うぼかし・すりガラス不具合の修正（高速ガウシアンブラーエンジンの内製化）
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const versionEl = document.getElementById('version-display');
-        if (versionEl) {
-            versionEl.textContent = `v${APP_INFO.version}`;
-        }
-    });
-    </script>
+    <!-- 共通管理スクリプト -->
+    <script src="common.js"></script>
 
     <style>
         :root {
@@ -108,7 +95,7 @@
             border-radius: var(--radius-lg); 
             border: 1px solid var(--border-color); 
             box-shadow: var(--shadow-md); 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
         }
 
         /* PC専用ワイドモード（最大2000px） */
@@ -133,11 +120,15 @@
             letter-spacing: -0.01em; 
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         .header-icon {
-            font-size: 24px;
-            line-height: 1;
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            display: block;
         }
         .header-controls {
             display: flex;
@@ -194,6 +185,50 @@
         .theme-toggle:hover { 
             border-color: var(--primary); 
             background: var(--primary-light); 
+        }
+
+        /* 共通グローバルナビゲーション */
+        .global-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .global-nav::-webkit-scrollbar {
+            display: none;
+        }
+        .nav-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            text-decoration: none;
+            transition: var(--transition);
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .nav-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+            pointer-events: none;
         }
 
         /* アップロードドロップエリア */
@@ -336,6 +371,12 @@
             border-radius: 4px; 
             background-color: #fff; 
             transform-origin: top left; 
+        }
+        #main-canvas.space-grab {
+            cursor: grab !important;
+        }
+        #main-canvas.space-grabbing {
+            cursor: grabbing !important;
         }
 
         /* 選択枠オーバーレイ */
@@ -594,55 +635,6 @@
             font-weight: 700; 
             color: var(--text-color); 
         }
-
-/* 共通グローバルナビゲーション */
-        .global-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 4px;
-            -webkit-overflow-scrolling: touch;
-        }
-        /* スクロールバーの非表示（SPでの見た目をすっきり保つ） */
-        .global-nav::-webkit-scrollbar {
-            display: none;
-        }
-        .global-nav {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .nav-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-color);
-            background: var(--card-bg-sub);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            text-decoration: none;
-            transition: var(--transition);
-            flex-shrink: 0;
-            user-select: none;
-        }
-        .nav-item:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        /* 現在表示しているページのアクティブ表示 */
-        .nav-item.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px var(--primary-glow);
-            pointer-events: none;
-        }
-
     </style>
 </head>
 <body>
@@ -650,7 +642,7 @@
 <div class="container" id="main-container">
     <div class="header">
         <h1>
-            <span class="header-icon">🧩</span>
+            <img src="img/Mosaic_Blur_Tool_icon.png" alt="アプリのアイコン" class="header-icon">
             Octopus Mosaic & Blur
         </h1>
         <div class="header-controls">
@@ -660,13 +652,8 @@
         </div>
     </div>
 
-    <!-- 共通ナビゲーション -->
-    <nav class="global-nav" aria-label="ツール切り替え">
-        <a href="index.html" class="nav-item"><span>🐙</span> TOP</a>
-        <a href="ExifFrame.html" class="nav-item"><span>📷</span> EXIF Frame</a>
-        <a href="MosaicBlur.html" class="nav-item active"><span>🧩</span> Mosaic & Blur</a>
-    </nav>
-
+    <!-- 共通ナビゲーション（common.jsから自動描画） -->
+    <nav id="global-nav"></nav>
 
     <!-- アップロードエリア -->
     <div class="drop-area" id="drop-area">
@@ -692,7 +679,7 @@
                     <button class="sub-btn" id="zoom-reset-btn" style="padding: 2px 8px; font-size: 11px;" title="ズームを100%（標準）に戻す">リセット</button>
                 </div>
 
-                <span id="history-count" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">加工: 0件</span>
+                <span id="history-count" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">加工: 0/50件</span>
                 <button class="sub-btn confirm-btn" id="apply-btn" style="display: none;">✔ 確定する</button>
             </div>
         </div>
@@ -711,7 +698,6 @@
             エフェクト・強度設定 <span>▼</span>
         </div>
         <div class="accordion-content open" id="content-effect-settings">
-            <!-- 選択形状をエフェクト設定の先頭に配置 -->
             <div class="setting-group-title">◆ 選択形状</div>
             <div class="segmented-picker">
                 <label class="picker-option">
@@ -828,8 +814,10 @@
         <h3> 使い方</h3>
         <p>・画像をアップロード後、画像上を指やマウスでドラッグして範囲を選択します。</p>
         <p>・拡大スライダーやスマホのピンチ操作で画像を拡大すると、細部まで正確にモザイクをかけられます。</p>
+        <p>・拡大時の画面移動：スマホでは<strong>「2本指でなぞる」</strong>、PCでは<strong>「Spaceキーを押しながらドラッグ」</strong>することで自由に視点を移動できます。</p>
         <p>・「100%リセット」ボタンを押すと、ワンタップで標準の全体表示に戻ります。</p>
         <p>・PCではヘッダーの「⤢ ワイド表示」ボタンを押すことで、最大2000pxの幅広レイアウトに拡張できます。</p>
+        <p>・最大50回まで連続加工が可能です。50回に達した場合は画像への確定（統合）を行うことで、加工を継続できます。</p>
         <p>・スライダーの数値を初期状態に戻したい場合は、エフェクト設定内の「↺ 設定をデフォルト値に戻す」ボタンを押してください。</p>
         <p>・間違えた場合は、上部のアクションバーからいつでも「戻る（Undo）」「進む（Redo）」が可能です。</p>
 
@@ -842,8 +830,8 @@
 </div>
 
 <footer class="footer usage-section">
-    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>
-     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
+    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>[cite: 1]
+     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>[cite: 1]
 </footer>
 
 <script>
@@ -885,7 +873,6 @@ const applyWideMode = () => {
     }
     if (originalImage) {
         setupCanvasDimensions();
-        redrawCanvas();
     }
 };
 
@@ -959,10 +946,11 @@ let originalMimeType = 'image/jpeg';
 let originalFileName = 'image.jpg';
 
 let displayScale = 1.0;
-let baseCanvasWidth = 0;
-let baseCanvasHeight = 0;
+let baseDisplayWidth = 0;
+let baseDisplayHeight = 0;
 let zoomLevel = 1.0;
 
+const MAX_HISTORY = 50;         // 加工履歴の上限
 let historyStack = [];
 let historyIndex = -1;
 
@@ -970,6 +958,23 @@ let currentSelection = null;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
+
+// PCスペースキードラッグ状態
+let isSpacePressed = false;
+let isPCPanning = false;
+let pcPanStartX = 0;
+let pcPanStartY = 0;
+let pcPanScrollLeft = 0;
+let pcPanScrollTop = 0;
+
+// スマホ2本指操作状態
+let isTouchPanning = false;
+let touchStartMidX = 0;
+let touchStartMidY = 0;
+let touchStartScrollLeft = 0;
+let touchStartScrollTop = 0;
+let initialPinchDistance = 0;
+let initialPinchZoom = 1.0;
 
 // --- DOM要素 ---
 const dropArea = document.getElementById('drop-area');
@@ -1151,14 +1156,18 @@ applyPresetToSliders();
 applyWideMode();
 
 // --- ズーム機能の実装 ---
+function updateCanvasCssSize() {
+    mainCanvas.style.width = `${Math.round(baseDisplayWidth * zoomLevel)}px`;
+    mainCanvas.style.height = `${Math.round(baseDisplayHeight * zoomLevel)}px`;
+}
+
 function setZoom(level) {
     zoomLevel = Math.max(1.0, Math.min(4.0, level));
     const percent = Math.round(zoomLevel * 100);
     zoomSlider.value = percent;
     zoomVal.textContent = `${percent}%`;
 
-    mainCanvas.style.width = `${Math.round(baseCanvasWidth * zoomLevel)}px`;
-    mainCanvas.style.height = `${Math.round(baseCanvasHeight * zoomLevel)}px`;
+    updateCanvasCssSize();
 
     if (currentSelection) {
         updateSelectionBox();
@@ -1175,39 +1184,78 @@ zoomResetBtn.addEventListener('click', () => {
     canvasContainer.scrollTop = 0;
 });
 
-// スマホ向けピンチイン・ピンチアウト処理
-let initialPinchDistance = 0;
-let initialPinchZoom = 1.0;
+// --- PC向け Spaceキー＋ドラッグ移動（手のひらツール） ---
+window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.code === 'Space' && !isSpacePressed) {
+        isSpacePressed = true;
+        e.preventDefault();
+        mainCanvas.classList.add('space-grab');
+    }
+});
 
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+        isSpacePressed = false;
+        mainCanvas.classList.remove('space-grab', 'space-grabbing');
+    }
+});
+
+// --- スマホ向け 2本指パン移動＆ピンチズーム（誤爆完全防止） ---
 canvasContainer.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length >= 2) {
         if (isDragging) {
             isDragging = false;
             currentSelection = null;
             hideSelectionBox();
         }
+
+        isTouchPanning = true;
         const t1 = e.touches[0];
         const t2 = e.touches[1];
+
+        touchStartMidX = (t1.clientX + t2.clientX) / 2;
+        touchStartMidY = (t1.clientY + t2.clientY) / 2;
+        touchStartScrollLeft = canvasContainer.scrollLeft;
+        touchStartScrollTop = canvasContainer.scrollTop;
+
         initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
         initialPinchZoom = zoomLevel;
     }
 }, { passive: false });
 
 canvasContainer.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2 && initialPinchDistance > 0) {
+    if (isTouchPanning && e.touches.length >= 2) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
-        const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        const scaleChange = currentDist / initialPinchDistance;
-        setZoom(initialPinchZoom * scaleChange);
+
+        const currentMidX = (t1.clientX + t2.clientX) / 2;
+        const currentMidY = (t1.clientY + t2.clientY) / 2;
+        const deltaX = currentMidX - touchStartMidX;
+        const deltaY = currentMidY - touchStartMidY;
+
+        canvasContainer.scrollLeft = touchStartScrollLeft - deltaX;
+        canvasContainer.scrollTop = touchStartScrollTop - deltaY;
+
+        if (initialPinchDistance > 0) {
+            const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            const scaleChange = currentDist / initialPinchDistance;
+            setZoom(initialPinchZoom * scaleChange);
+        }
     }
 }, { passive: false });
 
 canvasContainer.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) {
+        isTouchPanning = false;
         initialPinchDistance = 0;
     }
+}, { passive: true });
+
+canvasContainer.addEventListener('touchcancel', () => {
+    isTouchPanning = false;
+    initialPinchDistance = 0;
 }, { passive: true });
 
 // --- ファイル読み込み ---
@@ -1259,7 +1307,10 @@ function initWorkspace() {
     currentSelection = null;
     hideSelectionBox();
 
-    setZoom(1.0);
+    zoomLevel = 1.0;
+    zoomSlider.value = 100;
+    zoomVal.textContent = '100%';
+
     setupCanvasDimensions();
     redrawCanvas();
     updateHistoryUI();
@@ -1267,45 +1318,46 @@ function initWorkspace() {
 }
 
 function setupCanvasDimensions() {
+    if (!originalImage) return;
+
+    const w = originalImage.naturalWidth;
+    const h = originalImage.naturalHeight;
+
+    const MAX_PREVIEW_DIM = 2000;
+    const maxDim = Math.max(w, h);
+    displayScale = maxDim > MAX_PREVIEW_DIM ? (MAX_PREVIEW_DIM / maxDim) : 1.0;
+
+    mainCanvas.width = Math.round(w * displayScale);
+    mainCanvas.height = Math.round(h * displayScale);
+
     const containerWidth = (canvasContainer.clientWidth - 24) || 800;
     const maxPreviewHeight = window.innerHeight * 0.70;
 
-    let w = originalImage.naturalWidth;
-    let h = originalImage.naturalHeight;
-
-    let scale = Math.min(1.0, containerWidth / w);
-    if (h * scale > maxPreviewHeight) {
-        scale = maxPreviewHeight / h;
+    let fitScale = Math.min(1.0, containerWidth / mainCanvas.width);
+    if (mainCanvas.height * fitScale > maxPreviewHeight) {
+        fitScale = maxPreviewHeight / mainCanvas.height;
     }
 
-    displayScale = scale;
-    baseCanvasWidth = Math.round(w * displayScale);
-    baseCanvasHeight = Math.round(h * displayScale);
+    baseDisplayWidth = Math.round(mainCanvas.width * fitScale);
+    baseDisplayHeight = Math.round(mainCanvas.height * fitScale);
 
-    mainCanvas.width = baseCanvasWidth;
-    mainCanvas.height = baseCanvasHeight;
-
-    mainCanvas.style.width = `${Math.round(baseCanvasWidth * zoomLevel)}px`;
-    mainCanvas.style.height = `${Math.round(baseCanvasHeight * zoomLevel)}px`;
+    updateCanvasCssSize();
 }
 
 window.addEventListener('resize', () => {
     if (!originalImage) return;
     setupCanvasDimensions();
-    redrawCanvas();
 });
 
 // --- 高速ガウシアンブラー処理 (WebKit / iOS Canvas filter未対応対策) ---
 function applyFastBlur(ctx, width, height, radius) {
     if (radius <= 0 || width <= 0 || height <= 0) return;
     
-    // CSS filter blur(R) に近いボケ足となるようボックス半径を計算
     const r = Math.max(1, Math.round(radius * 0.65));
     const imgData = ctx.getImageData(0, 0, width, height);
     const data = imgData.data;
     const target = new Uint8ClampedArray(data.length);
     
-    // 3パスのボックスブラー（水平・垂直を3回反復してガウス分布に近似）
     for (let pass = 0; pass < 3; pass++) {
         boxBlurH(data, target, width, height, r);
         boxBlurV(target, data, width, height, r);
@@ -1444,11 +1496,10 @@ function applyEffectToCanvas(targetCtx, item, scale) {
         offCtx.imageSmoothingEnabled = false;
         offCtx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, rw, rh);
     } else {
-        // ぼかし単体の場合は現況をそのまま切り抜き転写
         offCtx.drawImage(targetCtx.canvas, rx, ry, rw, rh, 0, 0, rw, rh);
     }
 
-    // 2. ぼかし処理（内製ガウシアンブラーでWebKitでも100%確実に動作）
+    // 2. ぼかし処理
     if ((item.effect === 'blur' || item.effect === 'frosted') && item.blurPercent > 0) {
         const blurPx = Math.max(1, Math.round(baseDimension * (item.blurPercent / 100)));
         applyFastBlur(offCtx, rw, rh, blurPx);
@@ -1456,6 +1507,34 @@ function applyEffectToCanvas(targetCtx, item, scale) {
 
     targetCtx.drawImage(offCanvas, rx, ry);
     targetCtx.restore();
+}
+
+// --- ベース画像焼き込み（レイヤー統合）エンジン ---
+function bakeCurrentHistoryToOriginal() {
+    return new Promise((resolve) => {
+        statusText.textContent = 'これまでの加工を画像に統合中...';
+        
+        const fullCanvas = document.createElement('canvas');
+        fullCanvas.width = originalImage.naturalWidth;
+        fullCanvas.height = originalImage.naturalHeight;
+        const fullCtx = fullCanvas.getContext('2d');
+
+        fullCtx.drawImage(originalImage, 0, 0);
+        for (let i = 0; i <= historyIndex; i++) {
+            applyEffectToCanvas(fullCtx, historyStack[i], 1.0);
+        }
+
+        const dataUrl = fullCanvas.toDataURL(originalMimeType, 0.95);
+        const newImg = new Image();
+        newImg.onload = () => {
+            originalImage = newImg;
+            historyStack = [];
+            historyIndex = -1;
+            setupCanvasDimensions();
+            resolve();
+        };
+        newImg.src = dataUrl;
+    });
 }
 
 // --- ポインター操作制御 ---
@@ -1480,7 +1559,19 @@ function getCanvasPoint(e) {
 
 function handlePointerDown(e) {
     if (!originalImage) return;
-    if (e.pointerType === 'touch' && !e.isPrimary) return;
+
+    if (isSpacePressed) {
+        isPCPanning = true;
+        pcPanStartX = e.clientX;
+        pcPanStartY = e.clientY;
+        pcPanScrollLeft = canvasContainer.scrollLeft;
+        pcPanScrollTop = canvasContainer.scrollTop;
+        mainCanvas.classList.add('space-grabbing');
+        mainCanvas.setPointerCapture(e.pointerId);
+        return;
+    }
+
+    if (isTouchPanning || (e.pointerType === 'touch' && !e.isPrimary)) return;
 
     isDragging = true;
     const pt = getCanvasPoint(e);
@@ -1499,6 +1590,23 @@ function handlePointerDown(e) {
 }
 
 function handlePointerMove(e) {
+    if (isPCPanning) {
+        const dx = e.clientX - pcPanStartX;
+        const dy = e.clientY - pcPanStartY;
+        canvasContainer.scrollLeft = pcPanScrollLeft - dx;
+        canvasContainer.scrollTop = pcPanScrollTop - dy;
+        return;
+    }
+
+    if (isTouchPanning) {
+        if (isDragging) {
+            isDragging = false;
+            currentSelection = null;
+            hideSelectionBox();
+        }
+        return;
+    }
+
     if (!isDragging) return;
     const pt = getCanvasPoint(e);
     currentSelection.endX = pt.x;
@@ -1506,12 +1614,25 @@ function handlePointerMove(e) {
     updateSelectionBox();
 }
 
-function handlePointerUp(e) {
+async function handlePointerUp(e) {
+    if (isPCPanning) {
+        isPCPanning = false;
+        mainCanvas.classList.remove('space-grabbing');
+        try { mainCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
+        return;
+    }
+
+    if (isTouchPanning) {
+        isDragging = false;
+        currentSelection = null;
+        hideSelectionBox();
+        try { mainCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
+        return;
+    }
+
     if (!isDragging) return;
     isDragging = false;
-    try {
-        mainCanvas.releasePointerCapture(e.pointerId);
-    } catch (err) {}
+    try { mainCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
 
     const sel = getNormalizedSelection();
     if (sel.w < 6 || sel.h < 6) {
@@ -1521,7 +1642,7 @@ function handlePointerUp(e) {
     }
 
     if (getActiveConfirmMode() === 'instant') {
-        applyCurrentSelection();
+        await applyCurrentSelection();
     } else {
         applyBtn.style.display = 'inline-flex';
         statusText.textContent = '範囲を確認し、「確定する」ボタンを押してください。';
@@ -1542,11 +1663,14 @@ function updateSelectionBox() {
     const sel = getNormalizedSelection();
     const shape = getActiveShapeType();
 
+    const cssScaleX = (baseDisplayWidth * zoomLevel) / mainCanvas.width;
+    const cssScaleY = (baseDisplayHeight * zoomLevel) / mainCanvas.height;
+
     selectionBox.style.display = 'block';
-    selectionBox.style.left = `${Math.round(sel.x * zoomLevel)}px`;
-    selectionBox.style.top = `${Math.round(sel.y * zoomLevel)}px`;
-    selectionBox.style.width = `${Math.round(sel.w * zoomLevel)}px`;
-    selectionBox.style.height = `${Math.round(sel.h * zoomLevel)}px`;
+    selectionBox.style.left = `${Math.round(sel.x * cssScaleX)}px`;
+    selectionBox.style.top = `${Math.round(sel.y * cssScaleY)}px`;
+    selectionBox.style.width = `${Math.round(sel.w * cssScaleX)}px`;
+    selectionBox.style.height = `${Math.round(sel.h * cssScaleY)}px`;
 
     if (shape === 'ellipse') {
         selectionBox.classList.add('ellipse');
@@ -1560,7 +1684,7 @@ function hideSelectionBox() {
     applyBtn.style.display = 'none';
 }
 
-function applyCurrentSelection() {
+async function applyCurrentSelection() {
     if (!currentSelection) return;
     const sel = getNormalizedSelection();
     if (sel.w < 6 || sel.h < 6) {
@@ -1582,13 +1706,29 @@ function applyCurrentSelection() {
         h: sel.h / displayScale
     };
 
+    if (historyIndex + 1 >= MAX_HISTORY) {
+        const msg = `加工履歴が上限（${MAX_HISTORY}回）に達しました。\nこれまでの加工を画像に確定（統合）して、さらに加工を続けますか？\n\n（※確定した加工は『戻る』で取り消せなくなります）`;
+        if (confirm(msg)) {
+            await bakeCurrentHistoryToOriginal();
+            historyStack = [originalParam];
+            historyIndex = 0;
+            currentSelection = null;
+            hideSelectionBox();
+            redrawCanvas();
+            updateHistoryUI();
+            statusText.textContent = 'これまでの加工を確定し、新しい加工を適用しました。';
+            return;
+        } else {
+            currentSelection = null;
+            hideSelectionBox();
+            statusText.textContent = `加工上限（${MAX_HISTORY}回）に達しているため、新しい加工はキャンセルされました。`;
+            return;
+        }
+    }
+
     historyStack = historyStack.slice(0, historyIndex + 1);
     historyStack.push(originalParam);
-    if (historyStack.length > 30) {
-        historyStack.shift();
-    } else {
-        historyIndex++;
-    }
+    historyIndex++;
 
     currentSelection = null;
     hideSelectionBox();
@@ -1598,8 +1738,8 @@ function applyCurrentSelection() {
     statusText.textContent = '加工を適用しました。続けて範囲を選択できます。';
 }
 
-applyBtn.addEventListener('click', () => {
-    applyCurrentSelection();
+applyBtn.addEventListener('click', async () => {
+    await applyCurrentSelection();
 });
 
 // --- Undo / Redo / Reset 操作 ---
@@ -1625,7 +1765,7 @@ redoBtn.addEventListener('click', () => {
 
 resetBtn.addEventListener('click', () => {
     if (historyStack.length === 0) return;
-    if (confirm('すべての加工をリセットして初期状態に戻しますか？')) {
+    if (confirm('すべての加工をリセットして初期状態に戻しますか？\n（※統合済みの画像は元には戻りません）')) {
         historyStack = [];
         historyIndex = -1;
         hideSelectionBox();
@@ -1639,7 +1779,7 @@ resetBtn.addEventListener('click', () => {
 function updateHistoryUI() {
     undoBtn.disabled = historyIndex < 0;
     redoBtn.disabled = historyIndex >= historyStack.length - 1;
-    historyCountEl.textContent = `加工: ${historyIndex + 1}件`;
+    historyCountEl.textContent = `加工: ${historyIndex + 1}/${MAX_HISTORY}件`;
 }
 
 // --- 保存・エクスポート処理 ---
