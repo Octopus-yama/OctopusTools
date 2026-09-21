@@ -235,7 +235,7 @@
         .drop-area { 
             border: 2px dashed var(--primary-border); 
             border-radius: var(--radius-md); 
-            padding: 36px 20px; 
+            padding: 32px 20px; 
             text-align: center; 
             cursor: pointer; 
             background: var(--primary-light); 
@@ -454,7 +454,7 @@
             cursor: pointer; 
             user-select: none; 
             flex: 1; 
-            min-width: 110px; 
+            min-width: 90px; 
         }
         .picker-option input[type="radio"] { 
             display: none; 
@@ -495,9 +495,11 @@
             gap: 6px; 
             transition: opacity 0.2s ease; 
         }
+
+        /* 個別無効化（グレーアウト）スタイル */
         .slider-group.is-disabled { 
-            opacity: 0.35; 
-            cursor: not-allowed; 
+            opacity: 0.35 !important; 
+            cursor: not-allowed !important; 
         }
         .slider-group.is-disabled input[type="range"] { 
             cursor: not-allowed; 
@@ -724,25 +726,33 @@
                     <input type="radio" name="effect-type" value="frosted">
                     <span class="picker-label">すりガラス風</span>
                 </label>
-            </div>
-
-            <div class="setting-group-title">◆ 強度プリセット</div>
-            <div class="segmented-picker">
                 <label class="picker-option">
-                    <input type="radio" name="preset-strength" value="low">
-                    <span class="picker-label">弱 (小)</span>
-                </label>
-                <label class="picker-option">
-                    <input type="radio" name="preset-strength" value="med">
-                    <span class="picker-label">中 (標準)</span>
-                </label>
-                <label class="picker-option">
-                    <input type="radio" name="preset-strength" value="high">
-                    <span class="picker-label">強 (大)</span>
+                    <input type="radio" name="effect-type" value="blackout">
+                    <span class="picker-label">黒塗り</span>
                 </label>
             </div>
 
-            <div style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+            <!-- 強度プリセットコンテナ -->
+            <div id="preset-container">
+                <div class="setting-group-title">◆ 強度プリセット</div>
+                <div class="segmented-picker">
+                    <label class="picker-option">
+                        <input type="radio" name="preset-strength" value="low">
+                        <span class="picker-label">弱 (小)</span>
+                    </label>
+                    <label class="picker-option">
+                        <input type="radio" name="preset-strength" value="med">
+                        <span class="picker-label">中 (標準)</span>
+                    </label>
+                    <label class="picker-option">
+                        <input type="radio" name="preset-strength" value="high">
+                        <span class="picker-label">強 (大)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 詳細スライダー調整コンテナ -->
+            <div id="detail-sliders-container" style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
                 <div class="setting-group-title">◆ 詳細スライダー調整 (画像長辺に対する比率%で指定)</div>
                 <div class="slider-grid">
                     <div class="slider-group" id="slider-block-group">
@@ -813,6 +823,7 @@
 
         <h3> 使い方</h3>
         <p>・画像をアップロード後、画像上を指やマウスでドラッグして範囲を選択します。</p>
+        <p>・効果タイプとして「モザイク」「ぼかし」「すりガラス風」「黒塗り」から選択できます。</p>
         <p>・拡大スライダーやスマホのピンチ操作で画像を拡大すると、細部まで正確にモザイクをかけられます。</p>
         <p>・拡大時の画面移動：スマホでは<strong>「2本指でなぞる」</strong>、PCでは<strong>「Spaceキーを押しながらドラッグ」</strong>することで自由に視点を移動できます。</p>
         <p>・「100%リセット」ボタンを押すと、ワンタップで標準の全体表示に戻ります。</p>
@@ -873,7 +884,6 @@ const applyWideMode = () => {
     }
     if (originalImage) {
         setupCanvasDimensions();
-        redrawCanvas();
     }
 };
 
@@ -907,12 +917,18 @@ const DEFAULT_PRESET_VALUES = {
         low:  { blockPercent: 1.0, blurPercent: 0.5, opacity: 85 },
         med:  { blockPercent: 2.5, blurPercent: 1.2, opacity: 90 },
         high: { blockPercent: 5.0, blurPercent: 3.0, opacity: 95 }
+    },
+    blackout: {
+        low:  { blockPercent: 0.0, blurPercent: 0.0, opacity: 80 },
+        med:  { blockPercent: 0.0, blurPercent: 0.0, opacity: 90 },
+        high: { blockPercent: 0.0, blurPercent: 0.0, opacity: 100 }
     }
 };
 
-if (!localStorage.getItem('v006_migrated_presets')) {
-    localStorage.setItem('mode_confirm-mode', 'instant');
-    localStorage.setItem('v006_migrated_presets', 'true');
+// v1.07 黒塗りプリセット追加マイグレーション
+if (!localStorage.getItem('v107_blackout_migrated')) {
+    localStorage.removeItem('mosaic_custom_presets');
+    localStorage.setItem('v107_blackout_migrated', 'true');
 }
 
 function loadPresetValues() {
@@ -921,7 +937,7 @@ function loadPresetValues() {
     try {
         const parsed = JSON.parse(saved);
         const merged = JSON.parse(JSON.stringify(DEFAULT_PRESET_VALUES));
-        for (const eff of ['mosaic', 'blur', 'frosted']) {
+        for (const eff of ['mosaic', 'blur', 'frosted', 'blackout']) {
             for (const str of ['low', 'med', 'high']) {
                 if (parsed[eff] && parsed[eff][str]) {
                     merged[eff][str] = Object.assign({}, merged[eff][str], parsed[eff][str]);
@@ -951,7 +967,7 @@ let baseDisplayWidth = 0;
 let baseDisplayHeight = 0;
 let zoomLevel = 1.0;
 
-const MAX_HISTORY = 50;         // 加工履歴の上限
+const MAX_HISTORY = 50;
 let historyStack = [];
 let historyIndex = -1;
 
@@ -1047,41 +1063,65 @@ function restoreModeSelections() {
     if (strengthEl) strengthEl.checked = true;
 }
 
+// スライダー・プリセットの有効/無効（グレーアウト）UIの制御
 function updateSliderAvailability() {
     const effect = getActiveEffectType();
 
-    if (effect === 'mosaic') {
-        blockGroup.classList.remove('is-disabled');
-        blockSlider.disabled = false;
+    if (effect === 'blackout') {
+        // 黒塗りの場合：モザイク・ぼかしサイズは無効、不透明度は有効
+        blockGroup.classList.add('is-disabled');
+        blockSlider.disabled = true;
+
         blurGroup.classList.add('is-disabled');
         blurSlider.disabled = true;
+
         opacityGroup.classList.remove('is-disabled');
         opacitySlider.disabled = false;
+        resetPresetsBtn.disabled = false;
+    } else if (effect === 'mosaic') {
+        blockGroup.classList.remove('is-disabled');
+        blockSlider.disabled = false;
+
+        blurGroup.classList.add('is-disabled');
+        blurSlider.disabled = true;
+
+        opacityGroup.classList.remove('is-disabled');
+        opacitySlider.disabled = false;
+        resetPresetsBtn.disabled = false;
     } else if (effect === 'blur') {
         blockGroup.classList.add('is-disabled');
         blockSlider.disabled = true;
+
         blurGroup.classList.remove('is-disabled');
         blurSlider.disabled = false;
+
         opacityGroup.classList.remove('is-disabled');
         opacitySlider.disabled = false;
+        resetPresetsBtn.disabled = false;
     } else {
+        // すりガラス風
         blockGroup.classList.remove('is-disabled');
         blockSlider.disabled = false;
+
         blurGroup.classList.remove('is-disabled');
         blurSlider.disabled = false;
+
         opacityGroup.classList.remove('is-disabled');
         opacitySlider.disabled = false;
+        resetPresetsBtn.disabled = false;
     }
 }
 
 function applyPresetToSliders() {
     const effect = getActiveEffectType();
     const preset = getActivePresetStrength();
-    const config = presetValues[effect][preset];
+    const config = presetValues[effect] ? presetValues[effect][preset] : null;
 
-    blockSlider.value = config.blockPercent;
-    blurSlider.value = config.blurPercent;
-    opacitySlider.value = config.opacity;
+    if (config) {
+        blockSlider.value = config.blockPercent;
+        blurSlider.value = config.blurPercent;
+        opacitySlider.value = config.opacity;
+    }
 
     updateSliderAvailability();
     updateSliderDisplays();
@@ -1090,13 +1130,13 @@ function applyPresetToSliders() {
 function updateSliderDisplays() {
     const effect = getActiveEffectType();
 
-    if (effect === 'blur') {
+    if (effect === 'blur' || effect === 'blackout') {
         valBlockSize.textContent = '無効';
     } else {
         valBlockSize.textContent = `${parseFloat(blockSlider.value).toFixed(1)}%`;
     }
 
-    if (effect === 'mosaic') {
+    if (effect === 'mosaic' || effect === 'blackout') {
         valBlurRadius.textContent = '無効';
     } else {
         valBlurRadius.textContent = `${parseFloat(blurSlider.value).toFixed(1)}%`;
@@ -1109,13 +1149,15 @@ function onSliderChanged() {
     const effect = getActiveEffectType();
     const preset = getActivePresetStrength();
 
-    presetValues[effect][preset] = {
-        blockPercent: parseFloat(blockSlider.value),
-        blurPercent: parseFloat(blurSlider.value),
-        opacity: parseFloat(opacitySlider.value)
-    };
+    if (presetValues[effect]) {
+        presetValues[effect][preset] = {
+            blockPercent: (effect === 'blur' || effect === 'blackout') ? 0 : parseFloat(blockSlider.value),
+            blurPercent: (effect === 'mosaic' || effect === 'blackout') ? 0 : parseFloat(blurSlider.value),
+            opacity: parseFloat(opacitySlider.value)
+        };
 
-    savePresetValues();
+        savePresetValues();
+    }
     updateSliderDisplays();
 }
 
@@ -1318,7 +1360,6 @@ function initWorkspace() {
     statusText.textContent = 'ドラッグしてモザイク・ぼかしを入れる範囲を選択してください。';
 }
 
-// 画面幅変化の追跡用（スマホのアドレスバー伸縮による誤リセット防止）
 let lastWindowWidth = window.innerWidth;
 
 function setupCanvasDimensions() {
@@ -1334,8 +1375,6 @@ function setupCanvasDimensions() {
     const newCanvasW = Math.round(w * displayScale);
     const newCanvasH = Math.round(h * displayScale);
 
-    // Canvasのwidth/heightプロパティに値を再代入すると描画バッファが強制クリアされるため、
-    // 実際にサイズが変わる場合のみ代入する
     let sizeChanged = false;
     if (mainCanvas.width !== newCanvasW || mainCanvas.height !== newCanvasH) {
         mainCanvas.width = newCanvasW;
@@ -1356,7 +1395,6 @@ function setupCanvasDimensions() {
 
     updateCanvasCssSize();
 
-    // Canvasサイズが実際に変更された場合は再描画
     if (sizeChanged) {
         redrawCanvas();
     }
@@ -1364,7 +1402,6 @@ function setupCanvasDimensions() {
 
 window.addEventListener('resize', () => {
     if (!originalImage) return;
-    // スマホの縦スクロールによるアドレスバー伸縮（横幅が変わらない微小な高さ変化）では処理をスキップ
     if (window.innerWidth !== lastWindowWidth) {
         lastWindowWidth = window.innerWidth;
         setupCanvasDimensions();
@@ -1482,8 +1519,6 @@ function applyEffectToCanvas(targetCtx, item, scale) {
 
     if (rw <= 0 || rh <= 0) return;
 
-    const baseDimension = Math.max(targetCtx.canvas.width, targetCtx.canvas.height);
-
     targetCtx.save();
 
     targetCtx.beginPath();
@@ -1496,6 +1531,16 @@ function applyEffectToCanvas(targetCtx, item, scale) {
     }
     targetCtx.clip();
 
+    // 1. 黒塗り処理（指定された不透明度を反映して塗りつぶし）
+    if (item.effect === 'blackout') {
+        targetCtx.fillStyle = '#000000';
+        targetCtx.globalAlpha = item.opacity / 100;
+        targetCtx.fillRect(rx, ry, rw, rh);
+        targetCtx.restore();
+        return;
+    }
+
+    const baseDimension = Math.max(targetCtx.canvas.width, targetCtx.canvas.height);
     targetCtx.globalAlpha = item.opacity / 100;
 
     const offCanvas = document.createElement('canvas');
@@ -1503,7 +1548,7 @@ function applyEffectToCanvas(targetCtx, item, scale) {
     offCanvas.height = rh;
     const offCtx = offCanvas.getContext('2d');
 
-    // 1. モザイク処理
+    // 2. モザイク処理
     if (item.effect === 'mosaic' || item.effect === 'frosted') {
         const blk = Math.max(2, Math.round(baseDimension * (item.blockPercent / 100)));
         const smallW = Math.max(1, Math.floor(rw / blk));
@@ -1522,7 +1567,7 @@ function applyEffectToCanvas(targetCtx, item, scale) {
         offCtx.drawImage(targetCtx.canvas, rx, ry, rw, rh, 0, 0, rw, rh);
     }
 
-    // 2. ぼかし処理
+    // 3. ぼかし処理
     if ((item.effect === 'blur' || item.effect === 'frosted') && item.blurPercent > 0) {
         const blurPx = Math.max(1, Math.round(baseDimension * (item.blurPercent / 100)));
         applyFastBlur(offCtx, rw, rh, blurPx);
@@ -1707,7 +1752,6 @@ function hideSelectionBox() {
     applyBtn.style.display = 'none';
 }
 
-// 加工の確定・履歴追加（50回上限＆焼き込み統合）
 async function applyCurrentSelection() {
     if (!currentSelection) return;
     const sel = getNormalizedSelection();
@@ -1721,8 +1765,8 @@ async function applyCurrentSelection() {
     const originalParam = {
         shape: getActiveShapeType(),
         effect: eff,
-        blockPercent: (eff === 'blur') ? 0 : parseFloat(blockSlider.value),
-        blurPercent: (eff === 'mosaic') ? 0 : parseFloat(blurSlider.value),
+        blockPercent: (eff === 'blur' || eff === 'blackout') ? 0 : parseFloat(blockSlider.value),
+        blurPercent: (eff === 'mosaic' || eff === 'blackout') ? 0 : parseFloat(blurSlider.value),
         opacity: parseFloat(opacitySlider.value),
         x: sel.x / displayScale,
         y: sel.y / displayScale,

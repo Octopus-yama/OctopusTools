@@ -6,9 +6,9 @@
 
 const OCTOPUS_APP_INFO = {
     // 1. メイン（共通）バージョン情報
-    version: "1.06",
+    version: "1.07",
     date: "2026-09-21",
-    updateNote: "共通管理スクリプト（common.js）によるバージョン一元化およびナビゲーション自動生成対応/アイコンの追加",
+    updateNote: "効果タイプに「黒塗り（完全塗りつぶし）」を追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容（計3ツール）
     tools: {
@@ -24,8 +24,8 @@ const OCTOPUS_APP_INFO = {
         },
 mosaic: {
             name: "Mosaic & Blur",
-            subVersion: "108",
-            updateNote: "スマホ操作・スクロール時のキャンバス白飛び・消失不具合の修正"
+            subVersion: "110",
+            updateNote: "黒塗りの不透明度調整および強度プリセット（80/90/100%）対応"
         }
     }
 };
