@@ -6,26 +6,31 @@
 
 const OCTOPUS_APP_INFO = {
     // 1. メイン（共通）バージョン情報
-    version: "1.09",
+    version: "1.11",
     date: "2026-09-21",
-    updateNote: "フレームの項目区切り文字を選択・カスタマイズできる機能を追加",
+    updateNote: "「Octopus EXIF Frame」にPC向けワイド表示機能を追加",
 
-    // 2. 各ツールの個別サブバージョン・更新内容（計3ツール）
+    // 2. 各ツールの個別サブバージョン・更新内容（計4ツール）
     tools: {
         index: {
             name: "TOP",
-            subVersion: "5",
-            updateNote: "共通ナビゲーション対応、アクセス用QRコードの表示追加/アイコンの追加"
+            subVersion: "6",
+            updateNote: "「Octopus EXIF Cleaner」へのリンク・ツールカードを追加"
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "125",
-            updateNote: "フレーム設定に「区切り文字設定」を追加（10種類の区切り文字に対応）"
+            subVersion: "126",
+            updateNote: "PC環境向けに画面幅を最大2000pxに拡張できる「ワイド表示」ボタンを追加"
         },
         mosaic: {
             name: "Mosaic & Blur",
             subVersion: "110",
             updateNote: "黒塗りの不透明度調整および強度プリセット（80/90/100%）対応"
+        },
+        cleaner: {
+            name: "EXIF Cleaner",
+            subVersion: "1",
+            updateNote: "新規リリース：Exifメタデータ（GPS・日時・シリアル等）の選択削除・一括処理対応"
         }
     }
 };
@@ -34,13 +39,15 @@ const OCTOPUS_APP_INFO = {
 const OCTOPUS_NAV_ITEMS = [
     { id: "index", name: "TOP", url: "index.html", icon: "🐙" },
     { id: "exif", name: "EXIF Frame", url: "ExifFrame.html", icon: "📷" },
-    { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" }
+    { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
+    { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" }
 ];
 
 (function() {
     // 現在のページキーを判定（ファイル名またはURLから自動判別）
     function getCurrentPageKey() {
         const path = window.location.pathname.toLowerCase();
+        if (path.includes("exifcleaner")) return "cleaner";
         if (path.includes("exifframe")) return "exif";
         if (path.includes("mosaicblur")) return "mosaic";
         return "index";
