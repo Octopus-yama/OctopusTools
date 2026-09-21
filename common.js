@@ -6,9 +6,9 @@
 
 const OCTOPUS_APP_INFO = {
     // 1. メイン（共通）バージョン情報
-    version: "1.07",
+    version: "1.09",
     date: "2026-09-21",
-    updateNote: "効果タイプに「黒塗り（完全塗りつぶし）」を追加",
+    updateNote: "フレームの項目区切り文字を選択・カスタマイズできる機能を追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容（計3ツール）
     tools: {
@@ -19,10 +19,10 @@ const OCTOPUS_APP_INFO = {
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "122",
-            updateNote: "共通管理スクリプト連携、共通ナビゲーションへの移行"
+            subVersion: "125",
+            updateNote: "フレーム設定に「区切り文字設定」を追加（10種類の区切り文字に対応）"
         },
-mosaic: {
+        mosaic: {
             name: "Mosaic & Blur",
             subVersion: "110",
             updateNote: "黒塗りの不透明度調整および強度プリセット（80/90/100%）対応"

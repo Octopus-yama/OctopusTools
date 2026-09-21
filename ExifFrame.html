@@ -395,6 +395,44 @@
             box-shadow: 0 0 0 2px var(--primary);
         }
 
+        .separator-picker {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .separator-option {
+            cursor: pointer;
+            user-select: none;
+        }
+        .separator-option input[type="radio"] {
+            display: none;
+        }
+        .separator-label {
+            display: block;
+            padding: 8px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg-sub);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: var(--transition);
+            text-align: center;
+            white-space: pre;
+            font-family: monospace, inherit;
+        }
+        .separator-option:hover .separator-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .separator-option input[type="radio"]:checked + .separator-label {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
         .font-picker { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
@@ -1170,7 +1208,7 @@
                 <div class="drag-zone-header">
                     <span class="drag-zone-title">
                         ■ 2行目に記載する項目
-                        <span class="drag-zone-badge" id="line2-count">6項目</span>
+                        <span class="drag-zone-badge" id="line2-count">10項目</span>
                     </span>
                     <span style="font-size: 11px; color: var(--text-muted);">テキスト2設定適用</span>
                 </div>
@@ -1205,6 +1243,28 @@
                     <span style="font-size: 11px; color: var(--text-muted);">テキスト4設定適用</span>
                 </div>
                 <div class="drag-container" id="container-rightLine2" data-line="rightLine2"></div>
+            </div>
+
+            <!-- フリーテキスト入力エリア（テキスト1〜3のいずれかが有効な場合に動的表示） -->
+            <div id="free-text-settings-container" style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
+                <div style="font-size: 13px; font-weight: 700; color: var(--text-color); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    ■ フリーテキスト設定
+                    <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">（枠内に自由に入力した文言を描画します）</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group" id="group-free-text-1">
+                        <label>テキスト1 の内容</label>
+                        <input type="text" id="free-text-1" placeholder="カスタムテキスト1を入力">
+                    </div>
+                    <div class="form-group" id="group-free-text-2">
+                        <label>テキスト2 の内容</label>
+                        <input type="text" id="free-text-2" placeholder="カスタムテキスト2を入力">
+                    </div>
+                    <div class="form-group" id="group-free-text-3">
+                        <label>テキスト3 の内容</label>
+                        <input type="text" id="free-text-3" placeholder="カスタムテキスト3を入力">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1378,9 +1438,57 @@
                     <span style="font-size: 13px; font-weight: 600;">内枠線を設ける（グレー）</span>
                 </label>
             </div>
+
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color);"></div>
+            <div style="margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-sub);">
+            ◆ 区切り文字設定</div>
+            <div class="separator-picker">
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" ｜ " checked>
+                    <span class="separator-label"> ｜ </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" / ">
+                    <span class="separator-label"> / </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" ／ ">
+                    <span class="separator-label"> ／ </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" - ">
+                    <span class="separator-label"> - </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" － ">
+                    <span class="separator-label"> － </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" _ ">
+                    <span class="separator-label"> _ </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" ＿ ">
+                    <span class="separator-label"> ＿ </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" & ">
+                    <span class="separator-label"> & </span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value="   ">
+                    <span class="separator-label" title="半角スペース3つ">スペース</span>
+                </label>
+                <label class="separator-option">
+                    <input type="radio" name="separator-char" value=" ">
+                    <span class="separator-label" title="半角スペース1つ">なし</span>
+                </label>
+
+            </div>
         </div>
     </div>
 
+    <!-- アクションボタン群 -->
     <button id="generate-btn" class="main-btn">フレームを生成する</button>
     <button id="download-btn" class="main-btn" style="display: none;">一括ダウンロードする</button>
     
@@ -1391,6 +1499,7 @@
     </div>
 </div>
 
+<!-- 説明セクション -->
 <div class="explanation">
     <div class="usage-section">
         <h3> 本ツールについて</h3>
@@ -1400,7 +1509,7 @@
         <h3> できること</h3>
         <p>・アップロードした画像に、EXIF情報のフレームを追加します。</p>
         <p>・生成した画像のダウンロードができるとともに、生成時にクリップボードにも保存されるため、そのままペーストして利用が可能です。</p>
-        <p>・フォントサイズやフレーム枠などの細かい設定や、EXIF情報を強制上書きするモードもあるため、ご自身の好きな設定に変更ください。</p>
+        <p>・フォントサイズやフレーム枠などの細かい設定や、EXIF情報を強制上書きするモード、フリーテキストの挿入など、ご自身の好きな設定に変更ください。</p>
         
         <h3> 利用フォント・ライセンスについて</h3>
         <p>・本ツールでは、画像への文字入れ用、および、各種処理のためにオープンソースフォント／jsフレームワーク等を利用しています。著作権およびライセンスは、それぞれの権利者に帰属します。</p>
@@ -1426,7 +1535,7 @@
      ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
 </footer>
 
-    <script>
+<script>
     // iOS / iPadOS 環境を判定するハイブリッド関数
     const isIOS = () => {
         const ua = navigator.userAgent.toLowerCase();
@@ -1452,7 +1561,10 @@
             { id: 'exp', label: '露出時間', enabled: true },
             { id: 'iso', label: 'ISO感度', enabled: true },
             { id: 'datetime', label: '撮影日時', enabled: true },
-            { id: 'copyright', label: '署名', enabled: false }
+            { id: 'copyright', label: '署名', enabled: false },
+            { id: 'custom_text1', label: 'テキスト1', enabled: false },
+            { id: 'custom_text2', label: 'テキスト2', enabled: false },
+            { id: 'custom_text3', label: 'テキスト3', enabled: false }
         ]
     };
 
@@ -1473,11 +1585,14 @@
             { id: 'copyright', label: '署名', enabled: false }
         ],
         rightLine2: [
-            { id: 'lens', label: 'レンズ', enabled: true }
+            { id: 'lens', label: 'レンズ', enabled: true },
+            { id: 'custom_text1', label: 'テキスト1', enabled: false },
+            { id: 'custom_text2', label: 'テキスト2', enabled: false },
+            { id: 'custom_text3', label: 'テキスト3', enabled: false }
         ]
     };
 
-    // v0.81 マイグレーション: side-2のフォント設定を一度リセットして新デフォルトを適用
+    // v0.81 マイグレーション
     if (!localStorage.getItem('v081_migrated_fonts')) {
         ['#FFFFFF', '#000000', '#A0A0A0'].forEach(c => {
             localStorage.removeItem(`font-color-1_side-2_${c}`);
@@ -1492,7 +1607,7 @@
         localStorage.setItem('v081_migrated_fonts', 'true');
     }
 
-    // v0.82 マイグレーション: 各テンプレートのフォントサイズのデフォルト値を新仕様に合わせてリセット
+    // v0.82 マイグレーション
     if (!localStorage.getItem('v082_migrated_fonts_size')) {
         const templates = ['center-2', 'left-2', 'right-2', 'side-2'];
         templates.forEach(t => {
@@ -1536,6 +1651,14 @@
                     if (!parsed.leftLine2) parsed.leftLine2 = [];
                     parsed.leftLine2.push({ id: 'copyright', label: '署名', enabled: false });
                 }
+                // フリーテキスト1〜3の自動マイグレーション
+                ['custom_text1', 'custom_text2', 'custom_text3'].forEach((tId, idx) => {
+                    const exists = ['leftLine1', 'rightLine1', 'leftLine2', 'rightLine2'].some(key => parsed[key]?.some(it => it.id === tId));
+                    if (!exists) {
+                        if (!parsed.rightLine2) parsed.rightLine2 = [];
+                        parsed.rightLine2.push({ id: tId, label: `テキスト${idx + 1}`, enabled: false });
+                    }
+                });
                 return parsed;
             } else if (!isSide && Array.isArray(parsed.line1)) {
                 // 古い設定データのマイグレーション処理: shot_on が存在しない場合は1行目の先頭に追加
@@ -1550,6 +1673,14 @@
                     if (!parsed.line2) parsed.line2 = [];
                     parsed.line2.push({ id: 'copyright', label: '署名', enabled: false });
                 }
+                // フリーテキスト1〜3の自動マイグレーション
+                ['custom_text1', 'custom_text2', 'custom_text3'].forEach((tId, idx) => {
+                    const exists = (parsed.line1 || []).some(it => it.id === tId) || (parsed.line2 || []).some(it => it.id === tId);
+                    if (!exists) {
+                        if (!parsed.line2) parsed.line2 = [];
+                        parsed.line2.push({ id: tId, label: `テキスト${idx + 1}`, enabled: false });
+                    }
+                });
                 return parsed;
             }
         } catch (e) {
@@ -1574,7 +1705,21 @@
         });
     }
 
-    // ドラッグ＆ドロップUIのレンダリング
+    function updateFreeTextVisibility() {
+        const container = document.getElementById('free-text-settings-container');
+        if (!container) return;
+        const keys = getActiveLineKeys(currentTemplateId);
+        let hasAnyActive = false;
+        keys.forEach(k => {
+            (currentItemOrder[k] || []).forEach(item => {
+                if (['custom_text1', 'custom_text2', 'custom_text3'].includes(item.id) && item.enabled) {
+                    hasAnyActive = true;
+                }
+            });
+        });
+        container.style.display = hasAnyActive ? 'block' : 'none';
+    }
+
     function renderDragItems() {
         const keys = getActiveLineKeys(currentTemplateId);
         keys.forEach(lineKey => {
@@ -1605,6 +1750,7 @@
                 chk.addEventListener('change', (e) => {
                     item.enabled = e.target.checked;
                     saveItemOrder();
+                    updateFreeTextVisibility();
                 });
 
                 // ラベル
@@ -1666,6 +1812,7 @@
             });
         });
         updateZoneCounts();
+        updateFreeTextVisibility();
     }
 
     function moveItemToOtherLine(sourceLine, index) {
@@ -1795,6 +1942,7 @@
     // 初期化時レンダリングおよびリセットボタン設定
     document.addEventListener('DOMContentLoaded', () => {
         renderDragItems();
+        updateFreeTextVisibility();
 
         const resetBtn = document.getElementById('reset-order-btn');
         if (resetBtn) {
@@ -1803,6 +1951,7 @@
                 currentItemOrder = JSON.parse(JSON.stringify(defaultOrder));
                 saveItemOrder();
                 renderDragItems();
+                updateFreeTextVisibility();
                 statusText.textContent = '項目の並び順を初期状態に戻しました。';
             });
         }
@@ -1855,7 +2004,8 @@
         'ov-exp-chk', 'ov-exp-val',
         'ov-iso-chk', 'ov-iso-val',
         'ov-datetime-chk', 'ov-datetime-val',
-        'ov-copyright-chk', 'ov-copyright-val'
+        'ov-copyright-chk', 'ov-copyright-val',
+        'free-text-1', 'free-text-2', 'free-text-3'
     ];
 
     const templateDependentInputs = [
@@ -1926,6 +2076,7 @@
         
         currentItemOrder = loadItemOrder(currentTemplateId);
         renderDragItems();
+        updateFreeTextVisibility();
     }
 
     // イベントリスナーの登録
@@ -1936,10 +2087,14 @@
     commonInputs.forEach(id => {
         const el = document.getElementById(id);
         if(!el) return;
-        el.addEventListener('change', () => {
+        const saveVal = () => {
             localStorage.setItem(id, el.type === 'checkbox' ? el.checked : el.value);
             if(id === 'ov-main-chk') updateOverrideInputsState();
-        });
+        };
+        el.addEventListener('change', saveVal);
+        if (['free-text-1', 'free-text-2', 'free-text-3'].includes(id)) {
+            el.addEventListener('input', saveVal);
+        }
     });
 
     templateDependentInputs.forEach(id => {
@@ -2055,6 +2210,7 @@
     // 初期化関数を呼び出し
     restoreRadioState('frame-color', currentTemplateId, '#FFFFFF');
     restoreRadioState('font-family', currentTemplateId, 'Noto Sans JP');
+    restoreRadioState('separator-char', currentTemplateId, ' ｜ ');
     
     loadFontColorsForCurrentFrame();
 
@@ -2075,6 +2231,17 @@
             localStorage.setItem(`font-family_${currentTemplateId}`, e.target.value);
         });
     });
+
+    document.querySelectorAll('input[name="separator-char"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            localStorage.setItem(`separator-char_${currentTemplateId}`, e.target.value);
+        });
+    });
+
+    function getSelectedSeparator() {
+        const checked = document.querySelector('input[name="separator-char"]:checked');
+        return checked ? checked.value : ' ｜ ';
+    }
 
     function updateOverrideInputsState() {
         const isMainOn = document.getElementById('ov-main-chk').checked;
@@ -2785,6 +2952,10 @@
                 const resolved = getResolvedExif(exif);
 
                 // 各キーの値を取得するヘルパーマップ
+                const freeText1 = (document.getElementById('free-text-1')?.value || '').trim();
+                const freeText2 = (document.getElementById('free-text-2')?.value || '').trim();
+                const freeText3 = (document.getElementById('free-text-3')?.value || '').trim();
+
                 const itemValues = {
                     shot_on: "Shot on",
                     model: resolved.model || '',
@@ -2795,11 +2966,15 @@
                     exp: resolved.exposureTime || '',
                     iso: resolved.iso || '',
                     datetime: formatDateTime(resolved.dateTimeOriginal) || '',
-                    copyright: resolved.copyright || ''
+                    copyright: resolved.copyright || '',
+                    custom_text1: freeText1,
+                    custom_text2: freeText2,
+                    custom_text3: freeText3
                 };
 
                 // 数値系パラメータのキー一覧（隣り合う場合は半角スペース2個で自然に区切る）
                 const numParamKeys = new Set(['focal', 'fnum', 'exp', 'iso']);
+                const activeSeparator = getSelectedSeparator();
 
                 // 指定した行の描画用テキストトークンを組み立てる関数
                 function buildLineTokens(lineItems, level) {
@@ -2844,7 +3019,7 @@
                         const prev = activeTokens[i - 1];
                         const curr = activeTokens[i];
                         
-                        let separator = ' ｜ ';
+                        let separator = activeSeparator;
                         if (prev.id === 'shot_on') {
                             separator = '  '; 
                         } else if (numParamKeys.has(prev.id) && numParamKeys.has(curr.id)) {
@@ -3070,13 +3245,6 @@
 
 
 </script>
-
-
-<!-- license
-MIT License
-Copyright (c) 2026 Yamashita Octopus
-Permission is hereby granted, free of charge, to any person obtaining a copy...
--->
 
 </body>
 </html>
