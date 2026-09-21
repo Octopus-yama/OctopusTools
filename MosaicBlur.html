@@ -830,8 +830,8 @@
 </div>
 
 <footer class="footer usage-section">
-    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>[cite: 1]
-     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>[cite: 1]
+    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>
+     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
 </footer>
 
 <script>
@@ -873,6 +873,7 @@ const applyWideMode = () => {
     }
     if (originalImage) {
         setupCanvasDimensions();
+        redrawCanvas();
     }
 };
 
@@ -1317,6 +1318,9 @@ function initWorkspace() {
     statusText.textContent = 'ドラッグしてモザイク・ぼかしを入れる範囲を選択してください。';
 }
 
+// 画面幅変化の追跡用（スマホのアドレスバー伸縮による誤リセット防止）
+let lastWindowWidth = window.innerWidth;
+
 function setupCanvasDimensions() {
     if (!originalImage) return;
 
@@ -1327,8 +1331,17 @@ function setupCanvasDimensions() {
     const maxDim = Math.max(w, h);
     displayScale = maxDim > MAX_PREVIEW_DIM ? (MAX_PREVIEW_DIM / maxDim) : 1.0;
 
-    mainCanvas.width = Math.round(w * displayScale);
-    mainCanvas.height = Math.round(h * displayScale);
+    const newCanvasW = Math.round(w * displayScale);
+    const newCanvasH = Math.round(h * displayScale);
+
+    // Canvasのwidth/heightプロパティに値を再代入すると描画バッファが強制クリアされるため、
+    // 実際にサイズが変わる場合のみ代入する
+    let sizeChanged = false;
+    if (mainCanvas.width !== newCanvasW || mainCanvas.height !== newCanvasH) {
+        mainCanvas.width = newCanvasW;
+        mainCanvas.height = newCanvasH;
+        sizeChanged = true;
+    }
 
     const containerWidth = (canvasContainer.clientWidth - 24) || 800;
     const maxPreviewHeight = window.innerHeight * 0.70;
@@ -1342,11 +1355,21 @@ function setupCanvasDimensions() {
     baseDisplayHeight = Math.round(mainCanvas.height * fitScale);
 
     updateCanvasCssSize();
+
+    // Canvasサイズが実際に変更された場合は再描画
+    if (sizeChanged) {
+        redrawCanvas();
+    }
 }
 
 window.addEventListener('resize', () => {
     if (!originalImage) return;
-    setupCanvasDimensions();
+    // スマホの縦スクロールによるアドレスバー伸縮（横幅が変わらない微小な高さ変化）では処理をスキップ
+    if (window.innerWidth !== lastWindowWidth) {
+        lastWindowWidth = window.innerWidth;
+        setupCanvasDimensions();
+        redrawCanvas();
+    }
 });
 
 // --- 高速ガウシアンブラー処理 (WebKit / iOS Canvas filter未対応対策) ---
@@ -1684,6 +1707,7 @@ function hideSelectionBox() {
     applyBtn.style.display = 'none';
 }
 
+// 加工の確定・履歴追加（50回上限＆焼き込み統合）
 async function applyCurrentSelection() {
     if (!currentSelection) return;
     const sel = getNormalizedSelection();

@@ -22,10 +22,10 @@ const OCTOPUS_APP_INFO = {
             subVersion: "122",
             updateNote: "共通管理スクリプト連携、共通ナビゲーションへの移行"
         },
-        mosaic: {
+mosaic: {
             name: "Mosaic & Blur",
-            subVersion: "107",
-            updateNote: "共通管理スクリプト連携、共通ナビゲーションへの移行/アイコンの追加"
+            subVersion: "108",
+            updateNote: "スマホ操作・スクロール時のキャンバス白飛び・消失不具合の修正"
         }
     }
 };
