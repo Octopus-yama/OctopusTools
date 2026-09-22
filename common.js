@@ -5,37 +5,37 @@
  */
 
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（v1.13に繰り上げ）
-    version: "1.13",
+    // 1. メイン（共通）バージョン情報
+    version: "1.17",
     date: "2026-09-22",
-    updateNote: "「Octopus EXIF View & Edit」に表の縦サイズ可変・全画面フィット展開・文字サイズ切替機能を追加",
+    updateNote: "共通スタイルシート（common.css）の導入に伴う共通骨格デザインのハイブリッド化対応/Frameの改善",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
         index: {
             name: "TOP",
-            subVersion: "8",
-            updateNote: "「Octopus EXIF View & Edit」の専用アプリアイコン画像を適用"
+            subVersion: "10",
+            updateNote: "共通スタイルシート（common.css）導入に伴う骨格CSSの共通化"
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "126",
-            updateNote: "PC環境向けに画面幅を最大2000pxに拡張できる「ワイド表示」ボタンを追加"
+            subVersion: "129",
+            updateNote: "修正ミスの改善"
         },
         mosaic: {
             name: "Mosaic & Blur",
-            subVersion: "110",
-            updateNote: "黒塗りの不透明度調整および強度プリセット（80/90/100%）対応"
+            subVersion: "112",
+            updateNote: "共通スタイルシート（common.css）導入に伴う骨格CSSの共通化"
         },
         cleaner: {
             name: "EXIF Cleaner",
-            subVersion: "1",
-            updateNote: "新規リリース：Exifメタデータ（GPS・日時・シリアル等）の選択削除・一括処理対応"
+            subVersion: "3",
+            updateNote: "共通スタイルシート（common.css）導入に伴う骨格CSSの共通化"
         },
         viewedit: {
             name: "EXIF View & Edit",
-            subVersion: "6",
-            updateNote: "EXIF表の縦リサイズ機能、画面フィット展開ボタン、文字サイズ切替（標準/小/極小）による一覧性強化"
+            subVersion: "9",
+            updateNote: "共通スタイルシート（common.css）導入に伴う骨格CSSの共通化"
         }
     }
 };

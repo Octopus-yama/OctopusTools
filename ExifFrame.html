@@ -6,76 +6,25 @@
     <title>Octopus EXIF Frame｜Octopus Tools</title>
     <link rel="icon" href="img/Exif_Frame_Tool_icon.ico" type="image/png">
     <meta name="description" content="写真をシンプルなEXIFフレーム画像に加工するwebツール。複数枚の写真にも対応。" />
+    <!-- 依存ライブラリ -->
     <script src="full.umd.js"></script>
     <script src="piexif.min.js"></script>
     <script src="piexif.js"></script>
+    <!-- 共通スタイルシート -->
+    <link rel="stylesheet" href="common.css">
     <!-- 共通管理スクリプト -->
     <script src="common.js"></script>
 
     <style>
-        :root {
-            /* メインカラー：アース黄緑 (Sage / Olive Green) */
-            --primary: #607d3b;
-            --primary-hover: #4f682f;
-            --primary-light: #f2f6ec;
-            --primary-border: #c4d7b3;
-            --primary-glow: rgba(96, 125, 59, 0.2);
-
-            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
-            --accent: #542366;
-            --accent-hover: #411a50;
-            --accent-light: #f7effa;
-            --accent-border: #dbc3e3;
-
-            /* ニュートラル・サーフェス */
-            --bg-color: #f7f8f5;
-            --card-bg: #ffffff;
-            --card-bg-sub: #f3f5f0;
-            --text-color: #2b3324;
-            --text-muted: #64705a;
-            --border-color: #e0e6d8;
-            --border-hover: #b8c8a8;
-            
-            --danger-color: #c94a4a;
-            --danger-hover: #ab3737;
-
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
-            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
-            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* ダークモード設定 */
-        [data-theme="dark"] {
-            --primary: #86ad58;
-            --primary-hover: #9bc36c;
-            --primary-light: #252e1f;
-            --primary-border: #3d4a32;
-            --primary-glow: rgba(134, 173, 88, 0.25);
-
-            --accent: #bd79d9;
-            --accent-hover: #cb90e3;
-            --accent-light: #321d38;
-            --accent-border: #573361;
-
-            --bg-color: #1e221b;
-            --card-bg: #282d24;
-            --card-bg-sub: #21251e;
-            --text-color: #ecf0e6;
-            --text-muted: #a3b098;
-            --border-color: #373f32;
-            --border-hover: #4d5746;
-
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
+        /* ---------------------------------
+           EXIF Frame 固有スタイル
+        ------------------------------------ */
 
         /* テンプレートごとの表示切替 */
         body[data-template-type="side-2"] .only-standard { display: none !important; }
         body:not([data-template-type="side-2"]) .only-side-2 { display: none !important; }
 
+        /* 利用可能フォント定義 */
         @font-face { font-family: 'Noto Sans JP'; src: url('font/NotoSansJP-VariableFont_wght.ttf') format('truetype'); }
         @font-face { font-family: 'Google Sans Flex'; src: url('font/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype'); }
         @font-face { font-family: 'IBM Plex Sans JP'; src: url('font/IBMPlexSansJP-Regular.ttf') format('truetype'); }
@@ -87,129 +36,7 @@
         @font-face { font-family: 'Cherry Bomb'; src: url('font/CherryBombOne-Regular.ttf') format('truetype'); }
         @font-face { font-family: 'はちまるポップ'; src: url('font/HachiMaruPop-Regular.ttf') format('truetype'); }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 32px 16px; min-height: 100vh; transition: background-color 0.3s, color 0.3s; line-height: 1.6; }
-        
-        .container { 
-            max-width: 840px; 
-            margin: 0 auto; 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-md); 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-        }
-
-        /* PC専用ワイドモード（最大2000px） */
-        .container.wide-mode {
-            max-width: 2000px;
-            width: 96vw;
-        }
-
-        .header { 
-            display: flex; 
-            align-items: center; 
-            gap: 14px; 
-            margin-bottom: 24px; 
-            border-bottom: 2px solid var(--border-color); 
-            padding-bottom: 16px; 
-        }
-        .header h1 { 
-            margin: 0; 
-            font-size: 22px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            letter-spacing: -0.01em; 
-            display: flex;
-            align-items: center;
-        }
-        .header h1 img {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            box-shadow: var(--shadow-sm);
-            margin-right: 8px;
-        }
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: auto;
-        }
-        .version { 
-            font-size: 12px; 
-            font-weight: 600; 
-            color: var(--primary); 
-            background: var(--primary-light); 
-            border: 1px solid var(--primary-border); 
-            padding: 2px 10px; 
-            border-radius: 20px; 
-        }
-
-        .wide-toggle-btn {
-            display: none;
-            cursor: pointer;
-            background: var(--card-bg-sub);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        .wide-toggle-btn:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-
-        @media (min-width: 860px) {
-            .wide-toggle-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-            }
-        }
-        
-        .theme-toggle { 
-            cursor: pointer; 
-            background: var(--card-bg-sub); 
-            color: var(--text-color); 
-            border: 1px solid var(--border-color); 
-            padding: 6px 12px; 
-            border-radius: var(--radius-sm); 
-            font-size: 14px; 
-            transition: var(--transition); 
-        }
-        .theme-toggle:hover { 
-            border-color: var(--primary); 
-            background: var(--primary-light); 
-        }
-
-        .drop-area { 
-            border: 2px dashed var(--primary-border); 
-            border-radius: var(--radius-md); 
-            padding: 36px 20px; 
-            text-align: center; 
-            cursor: pointer; 
-            background: var(--primary-light); 
-            margin-bottom: 24px; 
-            transition: var(--transition); 
-        }
-        .drop-area:hover { 
-            border-color: var(--primary); 
-            background: var(--card-bg-sub); 
-            transform: translateY(-2px); 
-            box-shadow: var(--shadow-sm); 
-        }
-        .drop-area p { 
-            font-size: 14px; 
-            font-weight: 600; 
-            color: var(--text-color); 
-        }
-
+        /* アップロード済みファイル一覧 */
         .file-list { 
             margin-top: 18px; 
             display: grid; 
@@ -269,7 +96,6 @@
             background: var(--danger-hover); 
             transform: scale(1.1); 
         }
-        
         .clear-all-btn { 
             display: none; 
             margin-top: 14px; 
@@ -289,82 +115,7 @@
             transform: translateY(-1px); 
         }
 
-        .accordion { 
-            margin-bottom: 14px; 
-            border: 1px solid var(--border-color); 
-            border-radius: var(--radius-md); 
-            overflow: hidden; 
-            background: var(--card-bg); 
-            transition: var(--transition); 
-        }
-        .accordion:hover { 
-            border-color: var(--border-hover); 
-        }
-        .accordion-header { 
-            background: var(--card-bg-sub); 
-            padding: 14px 18px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 14px; 
-            color: var(--text-color); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            user-select: none; 
-            transition: var(--transition); 
-        }
-        .accordion-header:hover { 
-            background: var(--primary-light); 
-            color: var(--primary); 
-        }
-        .accordion-header span { 
-            font-size: 11px; 
-            color: var(--text-muted); 
-            transition: var(--transition); 
-        }
-        .accordion-content { 
-            padding: 20px; 
-            display: none; 
-            background: var(--card-bg); 
-            border-top: 1px solid var(--border-color); 
-        }
-        .accordion-content.open { 
-            display: block; 
-        }
-
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
-            gap: 16px; 
-        }
-        .form-group { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-        }
-        label { 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: var(--text-muted); 
-        }
-        input[type="number"], input[type="text"], textarea, select { 
-            width: 100%; 
-            padding: 9px 12px; 
-            border: 1px solid var(--border-color); 
-            border-radius: var(--radius-sm); 
-            background: var(--bg-color); 
-            color: var(--text-color); 
-            font-size: 14px; 
-            outline: none; 
-            transition: var(--transition); 
-            font-family: inherit;
-        }
-        input[type="number"]:focus, input[type="text"]:focus, textarea:focus, select:focus { 
-            border-color: var(--primary); 
-            box-shadow: 0 0 0 3px var(--primary-glow); 
-            background: var(--card-bg); 
-        }
-        
+        /* カラーピッカー */
         .color-picker { 
             display: flex; 
             gap: 20px; 
@@ -398,6 +149,7 @@
             border-color: transparent; 
         }
 
+        /* テンプレートピッカー */
         .template-picker {
             display: flex;
             gap: 12px;
@@ -433,6 +185,7 @@
             box-shadow: 0 0 0 2px var(--primary);
         }
 
+        /* 区切り文字ピッカー */
         .separator-picker {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
@@ -471,6 +224,7 @@
             box-shadow: 0 0 0 2px var(--primary);
         }
 
+        /* フォントピッカー */
         .font-picker { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
@@ -507,6 +261,7 @@
             box-shadow: 0 0 0 2px var(--primary); 
         }
 
+        /* EXIF強制上書き行 */
         .override-row { 
             display: grid; 
             grid-template-columns: 100px 24px 1fr 50px; 
@@ -587,7 +342,6 @@
             border-color: var(--primary-border);
         }
 
-        /* スマホ向けレスポンシブレイアウト */
         @media (max-width: 600px) {
             .override-row {
                 grid-template-columns: 1fr 24px 50px;
@@ -762,34 +516,7 @@
             background: rgba(201, 74, 74, 0.05);
         }
 
-        .main-btn { 
-            background: var(--primary); 
-            color: #ffffff; 
-            border: none; 
-            padding: 15px 24px; 
-            font-size: 15px; 
-            font-weight: 700; 
-            border-radius: var(--radius-md); 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 20px; 
-            transition: var(--transition); 
-            box-shadow: 0 4px 12px var(--primary-glow); 
-            letter-spacing: 0.02em; 
-        }
-        .main-btn:hover { 
-            background: var(--primary-hover); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 18px var(--primary-glow); 
-        }
-        .main-btn:disabled { 
-            background: #999999; 
-            cursor: not-allowed; 
-            transform: none; 
-            box-shadow: none; 
-        }
-
-        /* 一括ダウンロードボタン（アクセント：濃い紫） */
+        /* 一括ダウンロードボタン（アクセントカラー上書き） */
         #download-btn { 
             background: var(--accent) !important; 
             box-shadow: 0 4px 14px rgba(84, 35, 102, 0.25) !important; 
@@ -799,6 +526,7 @@
             box-shadow: 0 6px 20px rgba(84, 35, 102, 0.35) !important; 
         }
 
+        /* リザルトプレビュー */
         .result-area { 
             margin-top: 32px; 
             display: grid; 
@@ -837,7 +565,6 @@
         .result-thumb:hover { 
             transform: scale(1.04); 
         }
-        
         .single-download-btn { 
             background: var(--primary); 
             color: white; 
@@ -854,6 +581,7 @@
             background: var(--primary-hover); 
         }
 
+        /* ライトボックスモーダル */
         #lightbox-modal { 
             display: none; 
             position: fixed; 
@@ -874,7 +602,6 @@
             border-radius: var(--radius-sm); 
             object-fit: contain; 
             box-shadow: 0 12px 40px rgba(0,0,0,0.5); 
-            /* iOS向け：長押しで保存しやすくするためのプロパティ */
             -webkit-touch-callout: default;
         }
         #lightbox-close { 
@@ -925,121 +652,10 @@
             right: 20px;
         }
 
-        /* スマホ環境（タッチメイン）では矢印を非表示にしスワイプを促す */
         @media (max-width: 768px) {
             .lightbox-nav {
                 display: none !important;
             }
-        }
-
-        .explanation { 
-            max-width: 840px; 
-            margin: 28px auto 0; 
-            background: var(--card-bg); 
-            padding: 28px 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-sm); 
-            line-height: 1.7; 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .container.wide-mode ~ .explanation { 
-            max-width: 2000px; 
-        }
-        .usage-section h3 { 
-            font-size: 15px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            border-left: 4px solid var(--primary); 
-            padding-left: 10px; 
-            margin: 22px 0 10px 0; 
-            letter-spacing: 0.01em; 
-        }
-        .usage-section h3:first-child { 
-            margin-top: 0; 
-        }
-        .usage-section p { 
-            font-size: 13.5px; 
-            color: var(--text-muted); 
-            margin: 0 0 10px 0; 
-            padding-left: 1.2em; 
-            text-indent: -1.2em; 
-        } 
-        .usage-section ul { 
-            font-size: 13px; 
-            color: var(--text-muted); 
-            margin-top: 6px; 
-            padding-left: 2.2em; 
-            line-height: 1.85; 
-        }
-        .usage-section a { 
-            color: var(--primary); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: var(--transition); 
-        }
-        .usage-section a:hover { 
-            color: var(--accent); 
-            text-decoration: underline; 
-        }
-
-        .footer { 
-            text-align: center; 
-            padding: 28px 10px 36px; 
-            color: var(--text-muted); 
-            font-size: 12px; 
-        }
-        .copyright-name { 
-            font-weight: 700; 
-            color: var(--text-color); 
-        }
-
-        /* 共通グローバルナビゲーション */
-        .global-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 4px;
-            -webkit-overflow-scrolling: touch;
-        }
-        /* スクロールバーの非表示（SPでの見た目をすっきり保つ） */
-        .global-nav::-webkit-scrollbar {
-            display: none;
-        }
-        .global-nav {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .nav-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-color);
-            background: var(--card-bg-sub);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            text-decoration: none;
-            transition: var(--transition);
-            flex-shrink: 0;
-            user-select: none;
-        }
-        .nav-item:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        /* 現在表示しているページのアクティブ表示 */
-        .nav-item.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px var(--primary-glow);
-            pointer-events: none;
         }
     </style>
 </head>
@@ -1055,7 +671,7 @@
 <div class="container" id="main-container">
     <div class="header">
         <h1>
-            <img src="img/Exif_Frame_Tool_icon.png" alt="アプリのアイコン">
+            <img src="img/Exif_Frame_Tool_icon.png" alt="アプリのアイコン" class="header-icon">
             Octopus EXIF Frame
         </h1>
         <div class="header-controls">
@@ -1578,12 +1194,9 @@
     // iOS / iPadOS 環境を判定するハイブリッド関数
     const isIOS = () => {
         const ua = navigator.userAgent.toLowerCase();
-        // iPhone, iPod touch の判定
         if (/iphone|ipod/.test(ua)) return true;
-        // iPad の判定 (旧来のUA、およびiPadOS 13以降のMacIntel偽装を検知)
         if (/ipad/.test(ua)) return true;
         if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-        
         return false;
     };
 
@@ -1671,10 +1284,9 @@
             : ['line1', 'line2'];
     };
 
-    // ローカルストレージから項目の並び順・状態を読み込み
     function loadItemOrder(templateId = currentTemplateId) {
         const saved = localStorage.getItem(`exif-item-order_${templateId}`);
-        const fallback = localStorage.getItem('exif-item-order'); // 互換性フォールバック
+        const fallback = localStorage.getItem('exif-item-order');
         const dataToParse = saved || fallback;
         
         const isSide = templateId === 'side-2';
@@ -1684,13 +1296,11 @@
         try {
             const parsed = JSON.parse(dataToParse);
             if (isSide && Array.isArray(parsed.leftLine1)) {
-                // v0.84 署名の追加マイグレーション
                 const hasCopyright = ['leftLine1', 'rightLine1', 'leftLine2', 'rightLine2'].some(key => parsed[key].some(it => it.id === 'copyright'));
                 if (!hasCopyright) {
                     if (!parsed.leftLine2) parsed.leftLine2 = [];
                     parsed.leftLine2.push({ id: 'copyright', label: '署名', enabled: false });
                 }
-                // フリーテキスト1〜3の自動マイグレーション
                 ['custom_text1', 'custom_text2', 'custom_text3'].forEach((tId, idx) => {
                     const exists = ['leftLine1', 'rightLine1', 'leftLine2', 'rightLine2'].some(key => parsed[key]?.some(it => it.id === tId));
                     if (!exists) {
@@ -1700,19 +1310,16 @@
                 });
                 return parsed;
             } else if (!isSide && Array.isArray(parsed.line1)) {
-                // 古い設定データのマイグレーション処理: shot_on が存在しない場合は1行目の先頭に追加
                 const hasShotOn = parsed.line1.some(it => it.id === 'shot_on') || parsed.line2.some(it => it.id === 'shot_on');
                 if (!hasShotOn) {
                     const oldShotOnChk = localStorage.getItem(`shot-on-chk_${templateId}`) === 'true' || localStorage.getItem('shot-on-chk') === 'true';
                     parsed.line1.unshift({ id: 'shot_on', label: '「Shot on」', enabled: oldShotOnChk });
                 }
-                // v0.84 署名の追加マイグレーション
                 const hasCopyright = parsed.line1.some(it => it.id === 'copyright') || parsed.line2.some(it => it.id === 'copyright');
                 if (!hasCopyright) {
                     if (!parsed.line2) parsed.line2 = [];
                     parsed.line2.push({ id: 'copyright', label: '署名', enabled: false });
                 }
-                // フリーテキスト1〜3の自動マイグレーション
                 ['custom_text1', 'custom_text2', 'custom_text3'].forEach((tId, idx) => {
                     const exists = (parsed.line1 || []).some(it => it.id === tId) || (parsed.line2 || []).some(it => it.id === tId);
                     if (!exists) {
@@ -1759,7 +1366,6 @@
         container.style.display = hasAnyActive ? 'block' : 'none';
     }
 
-    // ドラッグ＆ドロップUIのレンダリング
     function renderDragItems() {
         const keys = getActiveLineKeys(currentTemplateId);
         keys.forEach(lineKey => {
@@ -1776,13 +1382,11 @@
                 el.dataset.line = lineKey;
                 el.dataset.index = index;
 
-                // グリップアイコン
                 const handle = document.createElement('span');
                 handle.className = 'drag-handle';
                 handle.innerHTML = '⋮⋮';
                 handle.title = 'ドラッグして移動';
 
-                // チェックボックス
                 const chk = document.createElement('input');
                 chk.type = 'checkbox';
                 chk.checked = item.enabled;
@@ -1793,17 +1397,14 @@
                     updateFreeTextVisibility();
                 });
 
-                // ラベル
                 const label = document.createElement('label');
                 label.htmlFor = chk.id;
                 label.textContent = item.label;
                 label.style.cursor = 'pointer';
 
-                // スマホ・キー操作向け補助ボタン群（行移動 / 前後移動）
                 const navBtns = document.createElement('span');
                 navBtns.className = 'drag-nav-btns';
 
-                // 行間切り替えボタン
                 const switchBtn = document.createElement('button');
                 switchBtn.type = 'button';
                 switchBtn.className = 'drag-nav-btn';
@@ -1814,7 +1415,6 @@
                     moveItemToOtherLine(lineKey, index);
                 };
 
-                // 前へ移動ボタン
                 const prevBtn = document.createElement('button');
                 prevBtn.type = 'button';
                 prevBtn.className = 'drag-nav-btn';
@@ -1826,7 +1426,6 @@
                     swapItemOrder(lineKey, index, index - 1);
                 };
 
-                // 次へ移動ボタン
                 const nextBtn = document.createElement('button');
                 nextBtn.type = 'button';
                 nextBtn.className = 'drag-nav-btn';
@@ -1883,7 +1482,7 @@
     function setupDragEvents(el) {
         el.addEventListener('dragstart', (e) => {
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', el.dataset.id); // Firefox等での動作に必要
+            e.dataTransfer.setData('text/plain', el.dataset.id);
             setTimeout(() => el.classList.add('dragging'), 0);
             draggedElement = el;
         });
@@ -1931,13 +1530,11 @@
 
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
-            // 水平・垂直の両方向のユークリッド距離で判定
             const childCenterX = box.left + box.width / 2;
             const childCenterY = box.top + box.height / 2;
             const dist = Math.hypot(x - childCenterX, y - childCenterY);
 
             if (dist < closest.distance) {
-                // ドロップ位置が要素の手前側か後ろ側かを判定
                 const isBefore = (x < childCenterX && Math.abs(y - childCenterY) < box.height / 2) || (y < box.top);
                 return { distance: dist, element: isBefore ? child : child.nextSibling };
             } else {
@@ -1946,12 +1543,8 @@
         }, { distance: Number.POSITIVE_INFINITY, element: null }).element;
     }
 
-    // DOMの並び順から currentItemOrder を更新して保存
     function syncOrderFromDOM() {
         const keys = getActiveLineKeys(currentTemplateId);
-        
-        // 途中で currentItemOrder を書き換えると他の行から移動してきたアイテムが見つからなくなるため、
-        // 処理前にすべてのアイテムを抽出してマップ化しておく
         const allItemsMap = new Map();
         keys.forEach(key => {
             (currentItemOrder[key] || []).forEach(item => {
@@ -1970,7 +1563,6 @@
             newOrder[key] = newLine;
         });
 
-        // 組み立てが終わってから、現在のデータオブジェクトを一括で更新する
         keys.forEach(key => {
             currentItemOrder[key] = newOrder[key];
         });
@@ -1979,7 +1571,6 @@
         renderDragItems();
     }
 
-    // 初期化時レンダリングおよびリセットボタン設定
     document.addEventListener('DOMContentLoaded', () => {
         renderDragItems();
         updateFreeTextVisibility();
@@ -2026,10 +1617,10 @@
         applyTheme();
     });
 
-    // --- PC向けワイド表示（最大2000px）切り替え ---
+    // --- PC向けワイド表示（最大2000px）切り替え（全ツール共通キー：octopus_wide_mode） ---
     const mainContainer = document.getElementById('main-container');
     const wideToggleBtn = document.getElementById('wide-toggle-btn');
-    let isWideMode = localStorage.getItem('exif_wide_mode') === 'true';
+    let isWideMode = (localStorage.getItem('octopus_wide_mode') ?? localStorage.getItem('exif_wide_mode')) === 'true';
 
     const applyWideMode = () => {
         if (isWideMode) {
@@ -2044,7 +1635,7 @@
     if (wideToggleBtn) {
         wideToggleBtn.addEventListener('click', () => {
             isWideMode = !isWideMode;
-            localStorage.setItem('exif_wide_mode', isWideMode ? 'true' : 'false');
+            localStorage.setItem('octopus_wide_mode', isWideMode ? 'true' : 'false');
             applyWideMode();
         });
     }
@@ -2096,10 +1687,9 @@
             const el = document.getElementById(id);
             if(!el) return;
             const saved = localStorage.getItem(`${id}_${currentTemplateId}`);
-            const fallback = localStorage.getItem(id); // 互換性フォールバック
+            const fallback = localStorage.getItem(id);
             let dataToSet = saved !== null ? saved : fallback;
             
-            // 未設定なら各テンプレート・項目ごとのデフォルト値を適用
             if (dataToSet === null) {
                 if (currentTemplateId === 'side-2') {
                     if (id === 'font-size-1') dataToSet = '38';
@@ -2121,13 +1711,12 @@
 
     function restoreRadioState(name, templateId, defaultValue) {
         const saved = localStorage.getItem(`${name}_${templateId}`);
-        const fallback = localStorage.getItem(name); // 互換性フォールバック
+        const fallback = localStorage.getItem(name);
         const val = saved !== null ? saved : (fallback !== null ? fallback : defaultValue);
         const radio = document.querySelector(`input[name="${name}"][value="${val}"]`);
         if (radio) radio.checked = true;
     }
 
-    // テンプレート切り替え時の処理
     function changeTemplate(newTemplateId) {
         currentTemplateId = newTemplateId;
         localStorage.setItem('selected-template', newTemplateId);
@@ -2144,7 +1733,6 @@
         updateFreeTextVisibility();
     }
 
-    // イベントリスナーの登録
     document.querySelectorAll('input[name="template-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => changeTemplate(e.target.value));
     });
@@ -2170,7 +1758,6 @@
         });
     });
 
-    // 初回ロード実行
     const tplRadio = document.querySelector(`input[name="template-type"][value="${currentTemplateId}"]`);
     if (tplRadio) tplRadio.checked = true;
 
@@ -2204,9 +1791,9 @@
 
         if (currentTemplateId === 'side-2') {
             defC1 = defaults.c1; 
-            defC2 = defaults.c1; // 右1行目もメインカラー
-            defC3 = defaults.c2; // 左2行目はサブカラー
-            defC4 = defaults.c2; // 右2行目もサブカラー
+            defC2 = defaults.c1;
+            defC3 = defaults.c2;
+            defC4 = defaults.c2;
         }
 
         const savedC1 = localStorage.getItem(`font-color-1_${currentTemplateId}_${frameColor}`);
@@ -2272,7 +1859,6 @@
         });
     };
 
-    // 初期化関数を呼び出し
     restoreRadioState('frame-color', currentTemplateId, '#FFFFFF');
     restoreRadioState('font-family', currentTemplateId, 'Noto Sans JP');
     restoreRadioState('separator-char', currentTemplateId, ' ｜ ');
@@ -2444,7 +2030,6 @@
         displayContainer.innerHTML = htmlContent;
     }
 
-    // 撮影日時文字列（EXIF規格: YYYY:MM:DD HH:MM:SS等）を表示・描画用（YYYY/MM/DD HH:mm:ss）に整形
     function formatDateTime(dtStr) {
         if (!dtStr) return '';
         const match = String(dtStr).match(/^(\d{4})[:\/\.-](\d{2})[:\/\.-](\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
@@ -2480,7 +2065,6 @@
         } else {
             prevBtn.style.display = 'flex';
             nextBtn.style.display = 'flex';
-            // 最初と最後の画像では該当する矢印を非表示（枠は残す）
             prevBtn.style.visibility = currentLightboxIndex > 0 ? 'visible' : 'hidden';
             nextBtn.style.visibility = currentLightboxIndex < generatedResults.length - 1 ? 'visible' : 'hidden';
         }
@@ -2493,7 +2077,6 @@
     };
 
     lightboxModal.addEventListener('click', (e) => {
-        // 画像やボタン以外の領域をクリックした場合のみ閉じる
         if (e.target === lightboxModal || e.target === lightboxClose) {
             lightboxModal.style.display = 'none';
             lightboxImg.src = '';
@@ -2516,7 +2099,6 @@
         }
     });
 
-    // キーボード操作対応
     document.addEventListener('keydown', (e) => {
         if (lightboxModal.style.display === 'flex') {
             if (e.key === 'ArrowLeft' && currentLightboxIndex > 0) {
@@ -2532,7 +2114,6 @@
         }
     });
 
-    // スワイプ操作対応
     let touchStartX = 0;
     let touchEndX = 0;
     
@@ -2549,14 +2130,12 @@
         if (generatedResults.length <= 1) return;
         const swipeThreshold = 40;
         if (touchEndX < touchStartX - swipeThreshold) {
-            // 左スワイプ -> 次の画像へ
             if (currentLightboxIndex < generatedResults.length - 1) {
                 currentLightboxIndex++;
                 updateLightboxImg();
             }
         }
         if (touchEndX > touchStartX + swipeThreshold) {
-            // 右スワイプ -> 前の画像へ
             if (currentLightboxIndex > 0) {
                 currentLightboxIndex--;
                 updateLightboxImg();
@@ -2582,7 +2161,6 @@
 
                 let rawParsed = null;
                 try {
-                    // 数値のまま取得したいタグのため、translateValues: false で別途抽出
                     rawParsed = await exifr.parse(file, {
                         pick: ['ExposureProgram', 'WhiteBalance', 'Flash', 'ColorSpace'],
                         translateValues: false,
@@ -2601,7 +2179,6 @@
                     if (parsed.FocalLength != null) {
                         const fl = Array.isArray(parsed.FocalLength) ? parsed.FocalLength[0] : parsed.FocalLength;
                         if (fl) {
-                            // 小数点第3位を四捨五入して小数第2位までにする
                             const rounded = Math.round(fl * 100) / 100;
                             data.focalLength = `${rounded}mm`;
                         } else {
@@ -2689,7 +2266,6 @@
         if (val) {
             valInput.value = val;
             chkInput.checked = true;
-            // ローカルストレージへの保存イベントを発火させる
             valInput.dispatchEvent(new Event('change'));
             chkInput.dispatchEvent(new Event('change'));
             statusText.textContent = `写真1の情報を「${val}」としてコピーし、有効化しました。`;
@@ -2698,7 +2274,6 @@
         }
     };
 
-    // --- 一括操作（チェック＆コピー） ---
     const overridesListKeys = ['model', 'make', 'lens', 'focal', 'fnum', 'exp', 'iso', 'datetime', 'copyright'];
 
     document.getElementById('bulk-check-all').addEventListener('click', () => {
@@ -2748,7 +2323,7 @@
         setVal('model', exif.model);
         setVal('make', exif.make);
         setVal('lens', exif.lens);
-        setVal('focal', exif.focalLength); // 抽出時に四捨五入済みの値が入ります
+        setVal('focal', exif.focalLength);
         setVal('fnum', exif.fNumber);
         setVal('exp', exif.exposureTime);
         setVal('iso', exif.iso);
@@ -2766,16 +2341,14 @@
         const isMainOn = document.getElementById('ov-main-chk').checked;
         const chk = document.getElementById(`ov-${key}-chk`);
         
-        // chk要素が存在し、かつチェックが入っている場合のみ上書きする（エラー防止）
         if (isMainOn && chk && chk.checked) {
             const val = document.getElementById(`ov-${key}-val`).value;
-            if (val.trim() !== '') return val.replace(/\r?\n/g, ' '); // 描画エラーを防ぐため改行をスペースに置換
+            if (val.trim() !== '') return val.replace(/\r?\n/g, ' ');
         }
         return originalValue;
     }
 
     function getResolvedExif(exif) {
-        // 焦点距離は上書きモードの入力値に対しても小数点第2位の四捨五入を適用する
         let focal = applyOverride('focal', exif.focalLength);
         if (focal) {
             const match = String(focal).match(/(\d+(?:\.\d+)?)/);
@@ -2862,7 +2435,6 @@
         if (resolved.copyright) zeroth[piexif.ImageIFD.Copyright] = resolved.copyright;
         if (resolved.software) zeroth[piexif.ImageIFD.Software] = resolved.software;
         
-        // 画像はCanvas出力時に自動で正位置(上)に補正されるため、常に1(Normal)を設定して二重回転を防ぐ
         zeroth[piexif.ImageIFD.Orientation] = 1;
 
         const focal = parseFocalLengthForExif(resolved.focalLength);
@@ -2932,7 +2504,6 @@
         }
     }
 
-    // データURLをFileオブジェクトに変換する関数（iOS共有メニュー等でファイル名を保持するため）
     function dataURLtoFile(dataurl, filename) {
         const arr = dataurl.split(',');
         const mime = arr[0].match(/:(.*?);/)[1];
@@ -2986,8 +2557,8 @@
                 const padL = Math.round(longSide * (s.l / 100));
                 const padR = Math.round(longSide * (s.r / 100));
 
-                const bw = s.border ? 2 : 0; // 外枠線の幅(2px)
-                const iw = s.innerBorder ? 1 : 0; // 内枠線の幅(1px)
+                const bw = s.border ? 2 : 0;
+                const iw = s.innerBorder ? 1 : 0;
 
                 canvas.width = imgW + padL + padR + (bw * 2);
                 canvas.height = imgH + padT + padB + (bw * 2);
@@ -3017,7 +2588,6 @@
 
                 const resolved = getResolvedExif(exif);
 
-                // 各キーの値を取得するヘルパーマップ
                 const freeText1 = (document.getElementById('free-text-1')?.value || '').trim();
                 const freeText2 = (document.getElementById('free-text-2')?.value || '').trim();
                 const freeText3 = (document.getElementById('free-text-3')?.value || '').trim();
@@ -3038,11 +2608,9 @@
                     custom_text3: freeText3
                 };
 
-                // 数値系パラメータのキー一覧（隣り合う場合は半角スペース2個で自然に区切る）
                 const numParamKeys = new Set(['focal', 'fnum', 'exp', 'iso']);
                 const activeSeparator = getSelectedSeparator();
 
-                // 指定した行の描画用テキストトークンを組み立てる関数
                 function buildLineTokens(lineItems, level) {
                     const activeTokens = [];
                     for (const item of lineItems) {
@@ -3172,7 +2740,7 @@
         
         let lastCanvas = null;
         const shouldEmbedExif = document.getElementById('exif-embed-chk').checked;
-        const isIOSDevice = isIOS(); // iOS判定を変数に保持
+        const isIOSDevice = isIOS();
         
         for (let i = 0; i < currentFiles.length; i++) {
             statusText.textContent = `生成中... (${i + 1} / ${currentFiles.length}枚)`;
@@ -3204,7 +2772,6 @@
                 
                 itemContainer.appendChild(thumb);
 
-                // 個別ダウンロードボタンの追加（OS判定による出し分け）
                 const singleDlBtn = document.createElement('button');
                 singleDlBtn.className = 'single-download-btn';
                 
@@ -3213,14 +2780,12 @@
                     singleDlBtn.onclick = async () => {
                         try {
                             const fileObj = dataURLtoFile(dataUrl, filename);
-                            // Web Share APIを使用してファイル名を維持したまま共有・保存メニューを呼び出す
                             if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
                                 await navigator.share({
                                     files: [fileObj],
                                     title: filename
                                 });
                             } else {
-                                // API非対応時のフォールバック処理
                                 const a = document.createElement('a');
                                 a.href = dataUrl;
                                 a.download = filename;
@@ -3262,14 +2827,12 @@
             }
         }
 
-        // メッセージの組み立て
         let finishMessage = '生成完了！';
         if (currentFiles.length === 1 && copySuccess) {
             finishMessage += 'クリップボードにコピーしました！ ';
         }
         finishMessage += 'サムネイルをクリックすると拡大プレビューできます。';
 
-        // iOS向け追加メッセージ
         if (isIOSDevice) {
             finishMessage += '<br><span style="display:inline-block; margin-top:10px; font-size:13px; color:var(--text-color); font-weight:normal; background:var(--card-bg-sub); padding:6px 14px; border-radius:4px; border:1px solid var(--border-color);">📱 「保存 / 共有する」ボタンから保存してください。</span>';
         }
@@ -3278,7 +2841,6 @@
 
         generateBtn.disabled = false;
         
-        // iOS以外の場合のみ一括ダウンロードボタンを表示
         if (!isIOSDevice) {
             downloadBtn.style.display = 'block';
             downloadBtn.textContent = currentFiles.length > 1 ? '一括ダウンロードする' : 'ダウンロードする';

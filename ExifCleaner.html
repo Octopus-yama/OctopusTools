@@ -7,6 +7,8 @@
     <!-- ファビコン指定 -->
     <link rel="icon" href="img/icon_cleaner.ico" type="image/x-icon">
     <meta name="description" content="ブラウザ内で安全に写真・画像のExifメタデータ（GPS、日時、シリアル等）を選択削除できるWebツール。" />
+    <!-- 共通スタイルシート -->
+    <link rel="stylesheet" href="common.css">
     <!-- 依存ライブラリ（同階層から読み込み） -->
     <script src="full.umd.js"></script>
     <script src="piexif.js"></script>
@@ -14,301 +16,6 @@
     <script src="common.js"></script>
 
     <style>
-        :root {
-            /* メインカラー：アース黄緑 (Sage / Olive Green) */
-            --primary: #607d3b;
-            --primary-hover: #4f682f;
-            --primary-light: #f2f6ec;
-            --primary-border: #c4d7b3;
-            --primary-glow: rgba(96, 125, 59, 0.2);
-
-            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
-            --accent: #542366;
-            --accent-hover: #411a50;
-            --accent-light: #f7effa;
-            --accent-border: #dbc3e3;
-
-            /* ニュートラル・サーフェス */
-            --bg-color: #f7f8f5;
-            --card-bg: #ffffff;
-            --card-bg-sub: #f3f5f0;
-            --text-color: #2b3324;
-            --text-muted: #64705a;
-            --border-color: #e0e6d8;
-            --border-hover: #b8c8a8;
-            
-            --danger-color: #c94a4a;
-            --danger-hover: #ab3737;
-            --warning-color: #d97706;
-            --warning-bg: #fef3c7;
-            --warning-border: #fcd34d;
-
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
-            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
-            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        [data-theme="dark"] {
-            --primary: #86ad58;
-            --primary-hover: #9bc36c;
-            --primary-light: #252e1f;
-            --primary-border: #3d4a32;
-            --primary-glow: rgba(134, 173, 88, 0.25);
-
-            --accent: #bd79d9;
-            --accent-hover: #cb90e3;
-            --accent-light: #321d38;
-            --accent-border: #573361;
-
-            --bg-color: #1e221b;
-            --card-bg: #282d24;
-            --card-bg-sub: #21251e;
-            --text-color: #ecf0e6;
-            --text-muted: #a3b098;
-            --border-color: #373f32;
-            --border-hover: #4d5746;
-
-            --warning-bg: #3b2d13;
-            --warning-border: #6d5218;
-
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            padding: 32px 16px; 
-            min-height: 100vh; 
-            transition: background-color 0.3s, color 0.3s; 
-            line-height: 1.6; 
-        }
-        
-        .container { 
-            max-width: 840px; 
-            margin: 0 auto; 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-md); 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .container.wide-mode {
-            max-width: 2000px;
-            width: 96vw;
-        }
-
-        .header { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            margin-bottom: 24px; 
-            border-bottom: 2px solid var(--border-color); 
-            padding-bottom: 16px; 
-        }
-        .header h1 { 
-            margin: 0; 
-            font-size: 22px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            letter-spacing: -0.01em; 
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-icon {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            border-radius: 6px;
-            box-shadow: var(--shadow-sm);
-            display: block;
-        }
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: auto;
-        }
-        .version { 
-            font-size: 12px; 
-            font-weight: 600; 
-            color: var(--primary); 
-            background: var(--primary-light); 
-            border: 1px solid var(--primary-border); 
-            padding: 2px 10px; 
-            border-radius: 20px; 
-        }
-
-        .wide-toggle-btn {
-            display: none;
-            cursor: pointer;
-            background: var(--card-bg-sub);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        .wide-toggle-btn:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        @media (min-width: 860px) {
-            .wide-toggle-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-            }
-        }
-
-        .theme-toggle { 
-            cursor: pointer; 
-            background: var(--card-bg-sub); 
-            color: var(--text-color); 
-            border: 1px solid var(--border-color); 
-            padding: 6px 12px; 
-            border-radius: var(--radius-sm); 
-            font-size: 14px; 
-            transition: var(--transition); 
-        }
-        .theme-toggle:hover { 
-            border-color: var(--primary); 
-            background: var(--primary-light); 
-        }
-
-        /* 共通グローバルナビゲーション */
-        .global-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 4px;
-            -webkit-overflow-scrolling: touch;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .global-nav::-webkit-scrollbar {
-            display: none;
-        }
-        .nav-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-color);
-            background: var(--card-bg-sub);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            text-decoration: none;
-            transition: var(--transition);
-            flex-shrink: 0;
-            user-select: none;
-        }
-        .nav-item:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        .nav-item.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px var(--primary-glow);
-            pointer-events: none;
-        }
-
-        /* ドロップエリア */
-        .drop-area { 
-            border: 2px dashed var(--primary-border); 
-            border-radius: var(--radius-md); 
-            padding: 34px 20px; 
-            text-align: center; 
-            cursor: pointer; 
-            background: var(--primary-light); 
-            margin-bottom: 24px; 
-            transition: var(--transition); 
-        }
-        .drop-area:hover, .drop-area.drag-over { 
-            border-color: var(--primary); 
-            background: var(--card-bg-sub); 
-            transform: translateY(-2px); 
-            box-shadow: var(--shadow-sm); 
-        }
-        .drop-area p { 
-            font-size: 14px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-        }
-        .drop-area span { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-            display: block; 
-            margin-top: 6px; 
-        }
-
-        /* アコーディオン */
-        .accordion { 
-            margin-bottom: 14px; 
-            border: 1px solid var(--border-color); 
-            border-radius: var(--radius-md); 
-            overflow: hidden; 
-            background: var(--card-bg); 
-            transition: var(--transition); 
-        }
-        .accordion:hover { 
-            border-color: var(--border-hover); 
-        }
-        .accordion-header { 
-            background: var(--card-bg-sub); 
-            padding: 14px 18px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 14px; 
-            color: var(--text-color); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            user-select: none; 
-            transition: var(--transition); 
-        }
-        .accordion-header:hover { 
-            background: var(--primary-light); 
-            color: var(--primary); 
-        }
-        .accordion-header span { 
-            font-size: 11px; 
-            color: var(--text-muted); 
-            transition: var(--transition); 
-        }
-        .accordion-content { 
-            padding: 20px; 
-            display: none; 
-            background: var(--card-bg); 
-            border-top: 1px solid var(--border-color); 
-        }
-        .accordion-content.open { 
-            display: block; 
-        }
-
         /* プリセット選択ピッカー */
         .setting-group-title { 
             font-size: 13px; 
@@ -332,7 +39,6 @@
             display: none; 
         }
         
-        /* 2行表示前提の高さ統一と縦中央揃え */
         .picker-label { 
             display: flex;
             align-items: center;
@@ -420,7 +126,6 @@
             top: 0;
             z-index: 2;
         }
-        /* ソート可能なヘッダーのスタイル */
         .sortable-th {
             cursor: pointer;
             user-select: none;
@@ -535,34 +240,6 @@
             background: var(--card-bg);
         }
 
-        /* アクションボタン群 */
-        .main-btn { 
-            background: var(--primary); 
-            color: #ffffff; 
-            border: none; 
-            padding: 15px 24px; 
-            font-size: 15px; 
-            font-weight: 700; 
-            border-radius: var(--radius-md); 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 20px; 
-            transition: var(--transition); 
-            box-shadow: 0 4px 12px var(--primary-glow); 
-            letter-spacing: 0.02em; 
-        }
-        .main-btn:hover:not(:disabled) { 
-            background: var(--primary-hover); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 18px var(--primary-glow); 
-        }
-        .main-btn:disabled { 
-            background: #999999; 
-            cursor: not-allowed; 
-            transform: none; 
-            box-shadow: none; 
-        }
-
         #download-all-btn {
             background: var(--accent) !important;
             box-shadow: 0 4px 14px rgba(84, 35, 102, 0.25) !important;
@@ -625,69 +302,6 @@
         }
         .single-dl-btn:hover {
             background: var(--primary-hover);
-        }
-
-        .explanation { 
-            max-width: 840px; 
-            margin: 28px auto 0; 
-            background: var(--card-bg); 
-            padding: 28px 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-sm); 
-            line-height: 1.7; 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .container.wide-mode ~ .explanation { 
-            max-width: 2000px; 
-        }
-
-        .usage-section h3 { 
-            font-size: 15px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            border-left: 4px solid var(--primary); 
-            padding-left: 10px; 
-            margin: 22px 0 10px 0; 
-            letter-spacing: 0.01em; 
-        }
-        .usage-section h3:first-child { 
-            margin-top: 0; 
-        }
-        .usage-section p { 
-            font-size: 13.5px; 
-            color: var(--text-muted); 
-            margin: 0 0 10px 0; 
-            padding-left: 1.2em; 
-            text-indent: -1.2em; 
-        } 
-        .usage-section ul { 
-            font-size: 13px; 
-            color: var(--text-muted); 
-            margin-top: 6px; 
-            padding-left: 2.2em; 
-            line-height: 1.85; 
-        }
-        .usage-section a { 
-            color: var(--primary); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: var(--transition); 
-        }
-        .usage-section a:hover { 
-            color: var(--accent); 
-            text-decoration: underline; 
-        }
-
-        .footer { 
-            text-align: center; 
-            padding: 28px 10px 36px; 
-            color: var(--text-muted); 
-            font-size: 12px; 
-        }
-        .copyright-name { 
-            font-weight: 700; 
-            color: var(--text-color); 
         }
     </style>
 </head>
@@ -905,10 +519,11 @@ themeBtn.addEventListener('click', () => {
     applyTheme();
 });
 
-// PCワイド表示切り替え
+// PCワイド表示切り替え（全ツール共通キー：octopus_wide_mode）
 const mainContainer = document.getElementById('main-container');
 const wideToggleBtn = document.getElementById('wide-toggle-btn');
-let isWideMode = localStorage.getItem('cleaner_wide_mode') === 'true';
+let isWideMode = (localStorage.getItem('octopus_wide_mode') ?? localStorage.getItem('cleaner_wide_mode')) === 'true';
+
 const applyWideMode = () => {
     if (isWideMode) {
         mainContainer.classList.add('wide-mode');
@@ -919,9 +534,10 @@ const applyWideMode = () => {
     }
 };
 applyWideMode();
+
 wideToggleBtn.addEventListener('click', () => {
     isWideMode = !isWideMode;
-    localStorage.setItem('cleaner_wide_mode', isWideMode ? 'true' : 'false');
+    localStorage.setItem('octopus_wide_mode', isWideMode ? 'true' : 'false');
     applyWideMode();
 });
 
@@ -972,7 +588,6 @@ const PRESETS = {
     'clean-all': { gps: true, datetime: true, serial: true, author: true, thumb: true, all: true }
 };
 
-// カスタムの初回デフォルト値（すべてチェック無し）
 const DEFAULT_CUSTOM = {
     gps: false,
     datetime: false,
@@ -982,7 +597,6 @@ const DEFAULT_CUSTOM = {
     all: false
 };
 
-// チェックボックスのUIへ値を反映
 function setCheckboxState(state) {
     chkGps.checked = !!state.gps;
     chkDatetime.checked = !!state.datetime;
@@ -992,7 +606,6 @@ function setCheckboxState(state) {
     chkAll.checked = !!state.all;
 }
 
-// 現在のチェックボックスの値を取得
 function getCheckboxState() {
     return {
         gps: chkGps.checked,
@@ -1004,7 +617,6 @@ function getCheckboxState() {
     };
 }
 
-// カスタム設定の読み込み
 function loadCustomSettings() {
     const saved = localStorage.getItem('cleaner_custom_settings');
     if (!saved) return Object.assign({}, DEFAULT_CUSTOM);
@@ -1015,12 +627,10 @@ function loadCustomSettings() {
     }
 }
 
-// カスタム設定の保存
 function saveCustomSettings(state) {
     localStorage.setItem('cleaner_custom_settings', JSON.stringify(state));
 }
 
-// プリセット適用処理
 function applyPreset(presetKey) {
     if (presetKey === 'custom') {
         const customState = loadCustomSettings();
@@ -1031,7 +641,6 @@ function applyPreset(presetKey) {
     }
 }
 
-// プリセットのラジオボタン変更時
 document.querySelectorAll('input[name="clean-preset"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         applyPreset(e.target.value);
@@ -1039,7 +648,6 @@ document.querySelectorAll('input[name="clean-preset"]').forEach(radio => {
     });
 });
 
-// 個別チェックボックス変更時のハンドラ
 function handleIndividualCheckChange(e) {
     if (e && e.target === chkAll && chkAll.checked) {
         chkGps.checked = true;
@@ -1063,7 +671,6 @@ function handleIndividualCheckChange(e) {
     chk.addEventListener('change', handleIndividualCheckChange);
 });
 
-// 設定の復元
 function restoreCleanSettings() {
     const savedPreset = localStorage.getItem('cleaner_preset') || 'privacy';
     const radio = document.querySelector(`input[name="clean-preset"][value="${savedPreset}"]`);
@@ -1083,7 +690,6 @@ if (filenameMode) {
     });
 }
 
-// 初期化時に保存済み設定を適用
 restoreCleanSettings();
 
 // ==========================================
@@ -1244,7 +850,6 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// ソート制御ロジック
 function sortFilesBy(key) {
     if (currentSort.key === key) {
         currentSort.asc = !currentSort.asc;
@@ -1302,7 +907,6 @@ function updateSortIndicators() {
     });
 }
 
-// ソートヘッダーへのクリックイベント登録
 document.querySelectorAll('.sortable-th').forEach(th => {
     th.addEventListener('click', () => {
         const sortKey = th.dataset.sort;
@@ -1464,7 +1068,6 @@ async function processSingleFile(file, opts) {
 
     const isJpeg = /\.(jpe?g)$/i.test(file.name) || file.type === 'image/jpeg';
 
-    // 1. JPEGの場合：piexifjs を用いた無劣化バイナリ書き換え
     if (isJpeg && typeof piexif !== 'undefined') {
         const rawDataUrl = await readFileAsDataURL(file);
 
@@ -1524,9 +1127,7 @@ async function processSingleFile(file, opts) {
                 outputBlob = dataURLtoBlob(piexif.remove(rawDataUrl));
             }
         }
-    } 
-    // 2. PNG / WebP / GIF等の場合：Canvas再描画によりメタデータを完全消去
-    else {
+    } else {
         outputBlob = await cleanViaCanvas(file, file.type || 'image/png');
     }
 
@@ -1662,7 +1263,6 @@ function renderResults() {
     });
 }
 
-// 一括ダウンロード（PC環境用：400ms間隔で順次実行）
 downloadAllBtn.addEventListener('click', async () => {
     if (processedResults.length === 0) return;
 

@@ -10,261 +10,15 @@
     <!-- 依存ライブラリ（同階層から読み込み） -->
     <script src="full.umd.js"></script>
     <script src="piexif.js"></script>
+    <!-- 共通スタイルシート -->
+    <link rel="stylesheet" href="common.css">
     <!-- 共通管理スクリプト -->
     <script src="common.js"></script>
 
     <style>
-        :root {
-            /* メインカラー：アース黄緑 (Sage / Olive Green) */
-            --primary: #607d3b;
-            --primary-hover: #4f682f;
-            --primary-light: #f2f6ec;
-            --primary-border: #c4d7b3;
-            --primary-glow: rgba(96, 125, 59, 0.2);
-
-            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
-            --accent: #542366;
-            --accent-hover: #411a50;
-            --accent-light: #f7effa;
-            --accent-border: #dbc3e3;
-
-            /* ニュートラル・サーフェス */
-            --bg-color: #f7f8f5;
-            --card-bg: #ffffff;
-            --card-bg-sub: #f3f5f0;
-            --text-color: #2b3324;
-            --text-muted: #64705a;
-            --border-color: #e0e6d8;
-            --border-hover: #b8c8a8;
-            
-            --danger-color: #c94a4a;
-            --danger-hover: #ab3737;
-            --edited-bg: #fffbeb;
-            --edited-border: #f59e0b;
-            --edited-text: #b45309;
-
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
-            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
-            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        [data-theme="dark"] {
-            --primary: #86ad58;
-            --primary-hover: #9bc36c;
-            --primary-light: #252e1f;
-            --primary-border: #3d4a32;
-            --primary-glow: rgba(134, 173, 88, 0.25);
-
-            --accent: #bd79d9;
-            --accent-hover: #cb90e3;
-            --accent-light: #321d38;
-            --accent-border: #573361;
-
-            --bg-color: #1e221b;
-            --card-bg: #282d24;
-            --card-bg-sub: #21251e;
-            --text-color: #ecf0e6;
-            --text-muted: #a3b098;
-            --border-color: #373f32;
-            --border-hover: #4d5746;
-
-            --edited-bg: #3d3318;
-            --edited-border: #d97706;
-            --edited-text: #fbbf24;
-
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            padding: 32px 16px; 
-            min-height: 100vh; 
-            transition: background-color 0.3s, color 0.3s; 
-            line-height: 1.6; 
-        }
-        
-        .container { 
-            max-width: 840px; 
-            margin: 0 auto; 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-md); 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .container.wide-mode {
-            max-width: 2000px;
-            width: 96vw;
-        }
-
-        .header { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            margin-bottom: 24px; 
-            border-bottom: 2px solid var(--border-color); 
-            padding-bottom: 16px; 
-        }
-        .header h1 { 
-            margin: 0; 
-            font-size: 22px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            letter-spacing: -0.01em; 
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-icon {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            border-radius: 6px;
-            box-shadow: var(--shadow-sm);
-            display: block;
-        }
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: auto;
-        }
-        .version { 
-            font-size: 12px; 
-            font-weight: 600; 
-            color: var(--primary); 
-            background: var(--primary-light); 
-            border: 1px solid var(--primary-border); 
-            padding: 2px 10px; 
-            border-radius: 20px; 
-        }
-
-        .wide-toggle-btn {
-            display: none;
-            cursor: pointer;
-            background: var(--card-bg-sub);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        .wide-toggle-btn:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        @media (min-width: 860px) {
-            .wide-toggle-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-            }
-        }
-
-        .theme-toggle { 
-            cursor: pointer; 
-            background: var(--card-bg-sub); 
-            color: var(--text-color); 
-            border: 1px solid var(--border-color); 
-            padding: 6px 12px; 
-            border-radius: var(--radius-sm); 
-            font-size: 14px; 
-            transition: var(--transition); 
-        }
-        .theme-toggle:hover { 
-            border-color: var(--primary); 
-            background: var(--primary-light); 
-        }
-
-        /* 共通グローバルナビゲーション */
-        .global-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 4px;
-            -webkit-overflow-scrolling: touch;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .global-nav::-webkit-scrollbar {
-            display: none;
-        }
-        .nav-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-color);
-            background: var(--card-bg-sub);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            text-decoration: none;
-            transition: var(--transition);
-            flex-shrink: 0;
-            user-select: none;
-        }
-        .nav-item:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        .nav-item.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px var(--primary-glow);
-            pointer-events: none;
-        }
-
-        /* ドロップエリア */
-        .drop-area { 
-            border: 2px dashed var(--primary-border); 
-            border-radius: var(--radius-md); 
-            padding: 34px 20px; 
-            text-align: center; 
-            cursor: pointer; 
-            background: var(--primary-light); 
-            margin-bottom: 24px; 
-            transition: var(--transition); 
-        }
-        .drop-area:hover, .drop-area.drag-over { 
-            border-color: var(--primary); 
-            background: var(--card-bg-sub); 
-            transform: translateY(-2px); 
-            box-shadow: var(--shadow-sm); 
-        }
-        .drop-area p { 
-            font-size: 14px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-        }
-        .drop-area span { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-            display: block; 
-            margin-top: 6px; 
-        }
+        /* ---------------------------------
+           EXIF View & Edit 固有スタイル
+        ------------------------------------ */
 
         /* ツールバー・モード切替 */
         .table-toolbar {
@@ -359,7 +113,7 @@
             background: rgba(201, 74, 74, 0.08);
         }
 
-        /* Excel風テーブルラッパー（縦リサイズ可・ドラッグ受付対応） */
+        /* Excel風テーブルラッパー（縦リサイズ可） */
         .table-wrapper {
             position: relative;
             height: 480px;
@@ -398,69 +152,26 @@
             vertical-align: middle;
         }
 
-        /* ---------------------------------
-           文字サイズ別スタイル（標準 / 小 / 極小）
-        ------------------------------------ */
-        .excel-table.font-size-normal {
-            font-size: 12.5px;
-        }
-        .excel-table.font-size-normal th, .excel-table.font-size-normal td {
-            padding: 8px 12px;
-        }
-        .excel-table.font-size-normal .meta-thumb {
-            width: 38px;
-            height: 38px;
-        }
-        .excel-table.font-size-normal .col-fixed {
-            min-width: 190px;
-            max-width: 240px;
-        }
+        /* 文字サイズ別スタイル */
+        .excel-table.font-size-normal { font-size: 12.5px; }
+        .excel-table.font-size-normal th, .excel-table.font-size-normal td { padding: 8px 12px; }
+        .excel-table.font-size-normal .meta-thumb { width: 38px; height: 38px; }
+        .excel-table.font-size-normal .col-fixed { min-width: 190px; max-width: 240px; }
 
-        .excel-table.font-size-small {
-            font-size: 11px;
-        }
-        .excel-table.font-size-small th, .excel-table.font-size-small td {
-            padding: 5px 8px;
-        }
-        .excel-table.font-size-small .meta-thumb {
-            width: 28px;
-            height: 28px;
-        }
-        .excel-table.font-size-small .col-fixed {
-            min-width: 160px;
-            max-width: 200px;
-        }
-        .excel-table.font-size-small .file-name-text {
-            font-size: 11.5px;
-        }
-        .excel-table.font-size-small .file-sub-text {
-            font-size: 10px;
-        }
+        .excel-table.font-size-small { font-size: 11px; }
+        .excel-table.font-size-small th, .excel-table.font-size-small td { padding: 5px 8px; }
+        .excel-table.font-size-small .meta-thumb { width: 28px; height: 28px; }
+        .excel-table.font-size-small .col-fixed { min-width: 160px; max-width: 200px; }
+        .excel-table.font-size-small .file-name-text { font-size: 11.5px; }
+        .excel-table.font-size-small .file-sub-text { font-size: 10px; }
 
-        .excel-table.font-size-mini {
-            font-size: 10px;
-        }
-        .excel-table.font-size-mini th, .excel-table.font-size-mini td {
-            padding: 3px 6px;
-        }
-        .excel-table.font-size-mini .meta-thumb {
-            width: 20px;
-            height: 20px;
-        }
-        .excel-table.font-size-mini .col-fixed {
-            min-width: 130px;
-            max-width: 170px;
-        }
-        .excel-table.font-size-mini .file-name-text {
-            font-size: 10px;
-        }
-        .excel-table.font-size-mini .file-sub-text {
-            font-size: 9px;
-        }
-        .excel-table.font-size-mini .mini-btn {
-            font-size: 9px;
-            padding: 1px 3px;
-        }
+        .excel-table.font-size-mini { font-size: 10px; }
+        .excel-table.font-size-mini th, .excel-table.font-size-mini td { padding: 3px 6px; }
+        .excel-table.font-size-mini .meta-thumb { width: 20px; height: 20px; }
+        .excel-table.font-size-mini .col-fixed { min-width: 130px; max-width: 170px; }
+        .excel-table.font-size-mini .file-name-text { font-size: 10px; }
+        .excel-table.font-size-mini .file-sub-text { font-size: 9px; }
+        .excel-table.font-size-mini .mini-btn { font-size: 9px; padding: 1px 3px; }
         
         /* 固定ヘッダー */
         .excel-table thead th {
@@ -480,12 +191,8 @@
         }
 
         /* ソート対応ヘッダースタイル */
-        .sortable-th {
-            cursor: pointer;
-        }
-        .sortable-th:hover {
-            background: var(--primary-light) !important;
-        }
+        .sortable-th { cursor: pointer; }
+        .sortable-th:hover { background: var(--primary-light) !important; }
         .sort-icon {
             display: inline-block;
             margin-left: 4px;
@@ -493,13 +200,8 @@
             color: var(--text-muted);
             vertical-align: middle;
         }
-        .sortable-th.active-sort {
-            color: var(--primary) !important;
-        }
-        .sortable-th.active-sort .sort-icon {
-            color: var(--primary);
-            font-weight: bold;
-        }
+        .sortable-th.active-sort { color: var(--primary) !important; }
+        .sortable-th.active-sort .sort-icon { color: var(--primary); font-weight: bold; }
 
         /* 編集可能/不可の視覚的区別 */
         .th-editable {
@@ -508,16 +210,10 @@
             border-top: 2px solid var(--primary);
             background: rgba(96, 125, 59, 0.04);
         }
-        .th-editable::before {
-            content: "✏️ ";
-            font-size: 10px;
-        }
-        .th-readonly {
-            color: var(--text-muted);
-            font-weight: 600;
-        }
+        .th-editable::before { content: "✏️ "; font-size: 10px; }
+        .th-readonly { color: var(--text-muted); font-weight: 600; }
         
-        /* 固定列（左端：ファイル情報） */
+        /* 固定列 */
         .excel-table td.col-fixed, .excel-table th.col-fixed {
             position: sticky;
             left: 0;
@@ -525,13 +221,8 @@
             z-index: 4;
             box-shadow: 2px 0 6px rgba(0, 0, 0, 0.04);
         }
-        .excel-table thead th.col-fixed {
-            background: var(--card-bg-sub);
-            z-index: 6;
-        }
-        .excel-table tr:hover td.col-fixed {
-            background: var(--primary-light);
-        }
+        .excel-table thead th.col-fixed { background: var(--card-bg-sub); z-index: 6; }
+        .excel-table tr:hover td.col-fixed { background: var(--primary-light); }
 
         .file-cell-content {
             display: flex;
@@ -559,29 +250,39 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .file-sub-text {
-            color: var(--text-muted);
-        }
+        .file-sub-text { color: var(--text-muted); }
 
-        /* 編集可能セル・編集済みスタイル */
+        /* 編集可能セル・編集済み・選択（フォーカス）スタイル */
         .editable-cell {
             cursor: pointer;
             position: relative;
             min-width: 90px;
-            transition: background 0.15s;
+            transition: background 0.12s, outline 0.12s;
+            user-select: none;
         }
         .editable-cell:hover {
             background: rgba(96, 125, 59, 0.08);
-            outline: 1px dashed var(--primary);
+        }
+        /* Excel風セル選択枠 */
+        .editable-cell.is-selected {
+            outline: 2px solid var(--primary) !important;
+            outline-offset: -2px;
+            background: rgba(96, 125, 59, 0.15) !important;
+            z-index: 3;
         }
         .editable-cell.is-edited {
             background: var(--edited-bg) !important;
             color: var(--edited-text) !important;
             font-weight: 700;
         }
+        .editable-cell.is-edited.is-selected {
+            background: #fef3c7 !important;
+        }
         .editable-cell.is-editing {
             padding: 0 !important;
             background: var(--card-bg) !important;
+            outline: none !important;
+            user-select: text;
         }
         .cell-input {
             width: 100%;
@@ -602,9 +303,18 @@
             display: none;
             gap: 4px;
         }
-        .editable-cell:hover .cell-actions {
+        .editable-cell:hover .cell-actions, .editable-cell.is-selected .cell-actions {
             display: flex;
         }
+
+        /* 操作列のボタングループ（誤クリック防止の余白） */
+        .row-action-group {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
         .mini-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -639,7 +349,7 @@
             cursor: default;
         }
 
-        /* フローティング吹き出しツールチップ */
+        /* 吹き出しツールチップ */
         #meta-tooltip {
             position: fixed;
             display: none;
@@ -656,213 +366,17 @@
             pointer-events: none;
             transition: opacity 0.15s ease;
         }
-        #meta-tooltip .tt-title {
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--primary);
-            margin-bottom: 2px;
-        }
-        #meta-tooltip .tt-tag {
-            font-family: monospace;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-        #meta-tooltip .tt-desc {
-            font-size: 12px;
-            color: var(--text-color);
-            line-height: 1.45;
-            margin-bottom: 6px;
-        }
-        #meta-tooltip .tt-status {
-            font-size: 11px;
-            font-weight: 700;
-            display: inline-block;
-            padding: 1px 6px;
-            border-radius: 4px;
-        }
-        #meta-tooltip .tt-status.editable {
-            background: var(--primary-light);
-            color: var(--primary);
-            border: 1px solid var(--primary-border);
-        }
-        #meta-tooltip .tt-status.readonly {
-            background: var(--card-bg-sub);
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-        }
-
-        /* アコーディオン */
-        .accordion { 
-            margin-bottom: 14px; 
-            border: 1px solid var(--border-color); 
-            border-radius: var(--radius-md); 
-            overflow: hidden; 
-            background: var(--card-bg); 
-            transition: var(--transition); 
-        }
-        .accordion:hover { 
-            border-color: var(--border-hover); 
-        }
-        .accordion-header { 
-            background: var(--card-bg-sub); 
-            padding: 14px 18px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 14px; 
-            color: var(--text-color); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            user-select: none; 
-            transition: var(--transition); 
-        }
-        .accordion-header:hover { 
-            background: var(--primary-light); 
-            color: var(--primary); 
-        }
-        .accordion-header span { 
-            font-size: 11px; 
-            color: var(--text-muted); 
-            transition: var(--transition); 
-        }
-        .accordion-content { 
-            padding: 20px; 
-            display: none; 
-            background: var(--card-bg); 
-            border-top: 1px solid var(--border-color); 
-        }
-        .accordion-content.open { 
-            display: block; 
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-        select, input[type="range"] {
-            width: 100%;
-            padding: 9px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-size: 14px;
-            outline: none;
-            transition: var(--transition);
-        }
-        select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
-            background: var(--card-bg);
-        }
-
-        /* 一括ダウンロードボタン（メインアクション） */
-        .main-btn { 
-            background: var(--accent); 
-            color: #ffffff; 
-            border: none; 
-            padding: 15px 24px; 
-            font-size: 15px; 
-            font-weight: 700; 
-            border-radius: var(--radius-md); 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 20px; 
-            transition: var(--transition); 
-            box-shadow: 0 4px 14px rgba(84, 35, 102, 0.25); 
-            letter-spacing: 0.02em; 
-        }
-        .main-btn:hover:not(:disabled) { 
-            background: var(--accent-hover); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(84, 35, 102, 0.35); 
-        }
-        .main-btn:disabled { 
-            background: #999999; 
-            cursor: not-allowed; 
-            transform: none; 
-            box-shadow: none; 
-        }
-
-        .explanation { 
-            max-width: 840px; 
-            margin: 28px auto 0; 
-            background: var(--card-bg); 
-            padding: 28px 32px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: var(--shadow-sm); 
-            line-height: 1.7; 
-            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .container.wide-mode ~ .explanation { 
-            max-width: 2000px; 
-        }
-
-        .usage-section h3 { 
-            font-size: 15px; 
-            font-weight: 700; 
-            color: var(--text-color); 
-            border-left: 4px solid var(--primary); 
-            padding-left: 10px; 
-            margin: 22px 0 10px 0; 
-            letter-spacing: 0.01em; 
-        }
-        .usage-section h3:first-child { 
-            margin-top: 0; 
-        }
-        .usage-section p { 
-            font-size: 13.5px; 
-            color: var(--text-muted); 
-            margin: 0 0 10px 0; 
-            padding-left: 1.2em; 
-            text-indent: -1.2em; 
-        } 
-        .usage-section ul { 
-            font-size: 13px; 
-            color: var(--text-muted); 
-            margin-top: 6px; 
-            padding-left: 2.2em; 
-            line-height: 1.85; 
-        }
-        .usage-section a { 
-            color: var(--primary); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: var(--transition); 
-        }
-        .usage-section a:hover { 
-            color: var(--accent); 
-            text-decoration: underline; 
-        }
-
-        .footer { 
-            text-align: center; 
-            padding: 28px 10px 36px; 
-            color: var(--text-muted); 
-            font-size: 12px; 
-        }
-        .copyright-name { 
-            font-weight: 700; 
-            color: var(--text-color); 
-        }
+        #meta-tooltip .tt-title { font-weight: 700; font-size: 13px; color: var(--primary); margin-bottom: 2px; }
+        #meta-tooltip .tt-tag { font-family: monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+        #meta-tooltip .tt-desc { font-size: 12px; color: var(--text-color); line-height: 1.45; margin-bottom: 6px; }
+        #meta-tooltip .tt-status { font-size: 11px; font-weight: 700; display: inline-block; padding: 1px 6px; border-radius: 4px; }
+        #meta-tooltip .tt-status.editable { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); }
+        #meta-tooltip .tt-status.readonly { background: var(--card-bg-sub); color: var(--text-muted); border: 1px solid var(--border-color); }
     </style>
 </head>
 <body>
 
-<!-- マウスホバー・長押し用フローティング吹き出し -->
+<!-- 吹き出し -->
 <div id="meta-tooltip">
     <div class="tt-title" id="tt-title"></div>
     <div class="tt-tag" id="tt-tag"></div>
@@ -883,7 +397,7 @@
         </div>
     </div>
 
-    <!-- 共通ナビゲーション（common.jsから自動描画） -->
+    <!-- 共通ナビゲーション -->
     <nav id="global-nav"></nav>
 
     <!-- ドロップエリア -->
@@ -900,7 +414,7 @@
                 <button type="button" class="mode-badge-btn active" id="btn-mode-simple">簡易モード</button>
                 <button type="button" class="mode-badge-btn" id="btn-mode-detail">詳細モード (全メタデータ)</button>
                 
-                <!-- 文字サイズ変更ピッカー（標準/小/極小） -->
+                <!-- 文字サイズ変更ピッカー -->
                 <div class="font-size-picker" title="表内の文字サイズと行の高さを切り替えます">
                     <span style="font-size: 11px; color: var(--text-muted); padding-left: 4px;">文字:</span>
                     <button type="button" class="font-size-btn active" data-size="normal">標準</button>
@@ -912,7 +426,6 @@
             </div>
 
             <div class="toolbar-group">
-                <!-- 縦サイズ画面フィット展開ボタン -->
                 <button type="button" class="sub-btn" id="btn-expand-height" title="表の縦幅を画面いっぱいに広げます">⤡ 縦を広げる</button>
                 <button type="button" class="sub-btn" id="btn-reset-all-edits" title="すべての写真の編集内容を初期状態に戻します">↺ 全編集をリセット</button>
                 <button type="button" class="sub-btn sub-btn-danger" id="btn-clear-all" title="読み込んだ写真をすべて除外します">全ファイルを除外</button>
@@ -967,7 +480,7 @@
         </div>
     </div>
 
-    <!-- アクションボタン（PC環境用の一括ダウンロードボタン） -->
+    <!-- 一括ダウンロードボタン（編集済みセルが1箇所以上ある場合のみ活性化） -->
     <button id="download-all-btn" class="main-btn" disabled>一括ダウンロードする</button>
     <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
 </div>
@@ -981,14 +494,12 @@
 
         <h3> 使い方</h3>
         <p>・枠内または<strong>表示されたExif表の上</strong>にJPEG写真をドラッグ＆ドロップして読み込みます（PCは最大50枚、スマホは最大10枚まで）。</p>
+        <p>・各セルを<strong>クリックして選択</strong>すると、Excelのように枠が表示されます。その状態で <strong>矢印キー（↑ / ↓ / ← / →）でセル移動</strong>、<strong>Deleteキーで値クリア</strong>、<strong>Ctrl+C（Cmd+C）でコピー</strong>、<strong>Ctrl+V（Cmd+V）でペースト</strong> が可能です。</p>
+        <p>・セルをダブルクリックするか、選択状態で <strong>Enter / F2 キー</strong> を押すと、その場で直接テキスト編集モードになります。</p>
         <p>・各行の「操作」列にある<strong>「⬇ 保存（iOSは 共有）」</strong>ボタンを押すと、その写真のExif変更内容を反映して個別保存できます。</p>
-        <p>・PC環境では下部の「一括ダウンロードする」ボタンから、編集後の全写真をまとめてダウンロードできます（iOS環境は各行のボタンから保存してください）。</p>
+        <p>・Exifの値を1箇所以上編集すると、下部の「一括ダウンロードする」ボタンが押せるようになり、全写真をまとめてダウンロードできます（iOS環境は各行のボタンから保存してください）。</p>
         <p>・PC環境では、表の右下をマウスでドラッグして<strong>縦の表示サイズを自由に変更</strong>できます。上部の「⤡ 縦を広げる」ボタンで一撃で画面いっぱいに拡大も可能です。</p>
         <p>・「文字：標準・小・極小」ボタンを押すと、文字サイズと行間をコンパクトに圧縮し、一覧性を高めて一度に多くの写真を俯瞰できます。</p>
-        <p>・表の左側に<strong>編集可能な主要項目（緑色の太字）</strong>が優先して並びます。各セルをダブルクリック（またはタップ）すると直接値を編集できます。</p>
-        <p>・各項目名をクリックすると<strong>昇順・降順で並び替え</strong>が可能です。項目名にマウスを合わせると、詳細な説明が吹き出しで表示されます。</p>
-        <p>・編集したセルは黄色くハイライトされます。ホバー時の「↺」で元に戻したり、「↓」でその値を全写真に一括反映できます。</p>
-        <p>・外部のExcel等からコピーした複数セルのテキスト（タブ区切り・改行区切り）を貼り付けて一括入力することも可能です。</p>
 
         <h3> ライセンスについて</h3>
         <p>・本ツールでは、オープンソースのライブラリを利用しています。著作権およびライセンスは各権利者に帰属します。</p>
@@ -1039,10 +550,11 @@ themeBtn.addEventListener('click', () => {
     applyTheme();
 });
 
-// PCワイド表示切り替え
+// PCワイド表示切り替え（全ツール共通キー：octopus_wide_mode）
 const mainContainer = document.getElementById('main-container');
 const wideToggleBtn = document.getElementById('wide-toggle-btn');
-let isWideMode = localStorage.getItem('viewedit_wide_mode') === 'true';
+let isWideMode = (localStorage.getItem('octopus_wide_mode') ?? localStorage.getItem('viewedit_wide_mode')) === 'true';
+
 const applyWideMode = () => {
     if (isWideMode) {
         mainContainer.classList.add('wide-mode');
@@ -1053,9 +565,10 @@ const applyWideMode = () => {
     }
 };
 applyWideMode();
+
 wideToggleBtn.addEventListener('click', () => {
     isWideMode = !isWideMode;
-    localStorage.setItem('viewedit_wide_mode', isWideMode ? 'true' : 'false');
+    localStorage.setItem('octopus_wide_mode', isWideMode ? 'true' : 'false');
     applyWideMode();
 });
 
@@ -1071,7 +584,6 @@ window.toggleAccordion = function(contentId, headerEl) {
 // 2. EXIF公式仕様準拠 タグ辞書マスタ
 // ==========================================
 const EXIF_DICTIONARY = {
-    // 編集可能項目（左側に優先配置されるグループ）
     Make: { label: 'カメラメーカー', hex: '0x010F', desc: 'カメラの製造メーカー名', ifd: '0th', editable: true, type: 'text' },
     Model: { label: 'カメラ機種名', hex: '0x0110', desc: 'カメラの機種名・型番', ifd: '0th', editable: true, type: 'text' },
     LensModel: { label: 'レンズモデル名', hex: '0xA434', desc: '装着レンズの商品名・型式', ifd: 'Exif', editable: true, type: 'text' },
@@ -1090,7 +602,6 @@ const EXIF_DICTIONARY = {
     LensMake: { label: 'レンズ製造者', hex: '0xA433', desc: '装着レンズのメーカー名', ifd: 'Exif', editable: true, type: 'text' },
     CameraOwnerName: { label: 'カメラ所有者名', hex: '0xA430', desc: '機材のオーナー氏名', ifd: 'Exif', editable: true, type: 'text' },
 
-    // 閲覧のみ項目（右側に続く主要・技術情報グループ）
     FocalLengthIn35mmFormat: { label: '35mm換算焦点距離', hex: '0xA405', desc: 'ライカ判換算の画角値（mm）', ifd: 'Exif', editable: false },
     ExposureProgram: { label: '露出プログラム', hex: '0x8822', desc: '絞り優先やマニュアル等の露出制御', ifd: 'Exif', editable: false },
     MeteringMode: { label: '測光方式', hex: '0x9207', desc: '評価・中央重点・スポット等', ifd: 'Exif', editable: false },
@@ -1140,14 +651,12 @@ const EXIF_DICTIONARY = {
     GPSImgDirection: { label: '撮影方角', hex: '0x0011', desc: 'レンズが向いていた方角（度）', ifd: 'GPS', editable: false }
 };
 
-// 【左側に最優先で並べる編集可能項目順序】
 const EDITABLE_PRIORITY_KEYS = [
     'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
     'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude',
     'ImageDescription', 'Software', 'UserComment', 'LensMake', 'CameraOwnerName'
 ];
 
-// 【編集可能項目の右側に続く、よく見られる閲覧項目の優先順序】
 const READONLY_PRIORITY_KEYS = [
     'FocalLengthIn35mmFormat', 'ExposureProgram', 'MeteringMode', 'LightSource', 'Flash',
     'WhiteBalance', 'ExposureMode', 'ExposureBiasValue', 'ColorSpace',
@@ -1155,7 +664,6 @@ const READONLY_PRIORITY_KEYS = [
     'Orientation', 'GPSAltitude', 'GPSTimeStamp', 'GPSDateStamp', 'DateTime'
 ];
 
-// 簡易モードで表示する項目
 const SIMPLE_FIELD_KEYS = [
     'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
     'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude', 'ImageDescription'
@@ -1168,6 +676,8 @@ let loadedFiles = [];
 let displayMode = localStorage.getItem('viewedit_display_mode') || 'simple';
 let activeFieldKeys = [];
 let currentSort = { key: null, asc: true };
+
+let selectedCellInfo = null;
 
 const dropArea = document.getElementById('drop-area');
 const fileInput = document.getElementById('file-input');
@@ -1295,11 +805,13 @@ function updateModeButtons() {
 btnModeSimple.addEventListener('click', () => {
     displayMode = 'simple';
     updateModeButtons();
+    clearCellSelection();
     renderTable();
 });
 btnModeDetail.addEventListener('click', () => {
     displayMode = 'detail';
     updateModeButtons();
+    clearCellSelection();
     renderTable();
 });
 updateModeButtons();
@@ -1347,6 +859,7 @@ function hideTooltip() {
 // 6. ソート制御ロジック
 // ==========================================
 function sortFilesBy(key) {
+    clearCellSelection();
     if (currentSort.key === key) {
         currentSort.asc = !currentSort.asc;
     } else {
@@ -1457,6 +970,7 @@ async function handleFiles(fileListObj) {
     }
 
     fileInput.value = '';
+    clearCellSelection();
     renderTable();
 
     if (skipped > 0) {
@@ -1552,20 +1066,65 @@ function formatFileSize(bytes) {
 }
 
 // ==========================================
-// 8. テーブル描画＆インライン編集
+// 8. テーブル描画＆インライン・ショートカット編集
 // ==========================================
+function clearCellSelection() {
+    if (selectedCellInfo && selectedCellInfo.el) {
+        selectedCellInfo.el.classList.remove('is-selected');
+    }
+    selectedCellInfo = null;
+}
+
+function selectCell(td, item, key, fileIdx, colIdx) {
+    if (isMobileDevice()) return;
+    if (td.classList.contains('is-editing')) return;
+
+    clearCellSelection();
+    td.classList.add('is-selected');
+    selectedCellInfo = {
+        el: td,
+        fileId: item.id,
+        key: key,
+        fileIdx: fileIdx,
+        colIdx: colIdx,
+        item: item
+    };
+}
+
+function scrollCellIntoViewSmart(targetTd, targetColIdx) {
+    if (!targetTd || !tableWrapper) return;
+
+    if (targetColIdx === 0) {
+        tableWrapper.scrollLeft = 0;
+        targetTd.scrollIntoView({ block: 'nearest' });
+        return;
+    }
+
+    const wrapperRect = tableWrapper.getBoundingClientRect();
+    const cellRect = targetTd.getBoundingClientRect();
+    const fixedCol = tableWrapper.querySelector('th.col-fixed');
+    const fixedWidth = fixedCol ? fixedCol.offsetWidth : 200;
+
+    const visibleLeftLimit = wrapperRect.left + fixedWidth;
+    if (cellRect.left < visibleLeftLimit) {
+        tableWrapper.scrollLeft -= (visibleLeftLimit - cellRect.left + 16);
+    } else if (cellRect.right > wrapperRect.right) {
+        tableWrapper.scrollLeft += (cellRect.right - wrapperRect.right + 16);
+    }
+    targetTd.scrollIntoView({ block: 'nearest' });
+}
+
 function renderTable() {
     if (loadedFiles.length === 0) {
         tableWorkspace.style.display = 'none';
         downloadAllBtn.disabled = true;
         currentSort = { key: null, asc: true };
+        clearCellSelection();
         return;
     }
 
     tableWorkspace.style.display = 'block';
-    downloadAllBtn.disabled = false;
 
-    // 列の並び順の決定
     if (displayMode === 'simple') {
         activeFieldKeys = SIMPLE_FIELD_KEYS.slice();
     } else {
@@ -1586,7 +1145,6 @@ function renderTable() {
         activeFieldKeys = Array.from(orderedSet);
     }
 
-    // ヘッダー行生成
     tableHead.innerHTML = '';
     const trHead = document.createElement('tr');
 
@@ -1597,9 +1155,8 @@ function renderTable() {
     thFixed.onclick = () => sortFilesBy('file_name');
     trHead.appendChild(thFixed);
 
-    // 操作列
     const thOp = document.createElement('th');
-    thOp.style.minWidth = '92px';
+    thOp.style.minWidth = '108px';
     thOp.style.textAlign = 'center';
     thOp.textContent = '操作';
     trHead.appendChild(thOp);
@@ -1624,7 +1181,6 @@ function renderTable() {
 
     tableHead.appendChild(trHead);
 
-    // ボディ行生成
     tableBody.innerHTML = '';
     let totalEditedCells = 0;
     const isIOSDevice = isIOS();
@@ -1646,7 +1202,6 @@ function renderTable() {
         `;
         tr.appendChild(tdFixed);
 
-        // 操作列：リセット ＋ 除外 ＋ 個別ダウンロード/共有ボタン
         const tdRowAction = document.createElement('td');
         tdRowAction.style.textAlign = 'center';
         tdRowAction.style.whiteSpace = 'nowrap';
@@ -1655,13 +1210,14 @@ function renderTable() {
         const dlBtnTitle = isIOSDevice ? 'この写真を共有・写真アプリへ保存' : 'この写真の編集内容を反映してダウンロード';
 
         tdRowAction.innerHTML = `
-            <button type="button" class="mini-btn" title="この写真の変更をリセット" onclick="resetFileEdits('${item.id}')">↺</button>
-            <button type="button" class="mini-btn" style="color:var(--danger-color);" title="この写真を除外" onclick="removeFile('${item.id}')">✖</button>
-            <button type="button" class="mini-btn mini-btn-dl" title="${dlBtnTitle}" onclick="downloadSingleFile('${item.id}')">${dlBtnLabel}</button>
+            <div class="row-action-group">
+                <button type="button" class="mini-btn" title="この写真の変更をリセット" onclick="resetFileEdits('${item.id}')">↺</button>
+                <button type="button" class="mini-btn" style="color:var(--danger-color);" title="この写真を除外" onclick="removeFile('${item.id}')">✖</button>
+                <button type="button" class="mini-btn mini-btn-dl" title="${dlBtnTitle}" onclick="downloadSingleFile('${item.id}')">${dlBtnLabel}</button>
+            </div>
         `;
         tr.appendChild(tdRowAction);
 
-        // 各Exif項目セル
         activeFieldKeys.forEach((key, colIdx) => {
             const td = document.createElement('td');
             const info = EXIF_DICTIONARY[key] || { editable: false };
@@ -1679,7 +1235,10 @@ function renderTable() {
             td.dataset.fileIdx = fileIdx;
 
             if (isEditable) {
-                td.className = `editable-cell${isEdited ? ' is-edited' : ''}`;
+                const isSelected = selectedCellInfo && selectedCellInfo.fileId === item.id && selectedCellInfo.key === key;
+                td.className = `editable-cell${isEdited ? ' is-edited' : ''}${isSelected ? ' is-selected' : ''}`;
+                if (isSelected) selectedCellInfo.el = td;
+
                 td.innerHTML = `
                     <span class="cell-text">${escapeHtml(currVal || '-')}</span>
                     <div class="cell-actions">
@@ -1687,6 +1246,12 @@ function renderTable() {
                         <button type="button" class="mini-btn" title="全写真にこの値を適用" onclick="applyToAllFiles(event, '${key}', '${escapeHtml(currVal)}')">↓</button>
                     </div>
                 `;
+
+                td.addEventListener('click', (e) => {
+                    if (e.target.closest('.mini-btn')) return;
+                    selectCell(td, item, key, fileIdx, colIdx);
+                });
+
                 td.addEventListener('dblclick', () => startCellEdit(td, item, key));
             } else {
                 td.className = 'readonly-cell';
@@ -1700,11 +1265,20 @@ function renderTable() {
     });
 
     editCountBadge.textContent = totalEditedCells > 0 ? `（${totalEditedCells}箇所 編集済み）` : '';
+
+    downloadAllBtn.disabled = (totalEditedCells === 0);
 }
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#table-wrapper') && !e.target.closest('.table-toolbar')) {
+        clearCellSelection();
+    }
+});
 
 function startCellEdit(td, item, key) {
     if (td.classList.contains('is-editing')) return;
 
+    clearCellSelection();
     td.classList.add('is-editing');
     const currVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : '';
     
@@ -1718,11 +1292,15 @@ function startCellEdit(td, item, key) {
         item.currentMeta[key] = newVal;
         td.classList.remove('is-editing');
         renderTable();
+        const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
+        if (newTd) selectCell(newTd, item, key, parseInt(newTd.dataset.fileIdx, 10), parseInt(newTd.dataset.colIdx, 10));
     };
 
     const cancel = () => {
         td.classList.remove('is-editing');
         renderTable();
+        const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
+        if (newTd) selectCell(newTd, item, key, parseInt(newTd.dataset.fileIdx, 10), parseInt(newTd.dataset.colIdx, 10));
     };
 
     input.addEventListener('blur', commit);
@@ -1732,7 +1310,6 @@ function startCellEdit(td, item, key) {
     });
 }
 
-// セル単位リセット
 window.resetCellEdit = function(e, fileId, key) {
     e.stopPropagation();
     const item = loadedFiles.find(f => f.id === fileId);
@@ -1742,7 +1319,6 @@ window.resetCellEdit = function(e, fileId, key) {
     }
 };
 
-// 写真単位リセット
 window.resetFileEdits = function(fileId) {
     const item = loadedFiles.find(f => f.id === fileId);
     if (item) {
@@ -1752,16 +1328,15 @@ window.resetFileEdits = function(fileId) {
     }
 };
 
-// 写真除外
 window.removeFile = function(fileId) {
     const idx = loadedFiles.findIndex(f => f.id === fileId);
     if (idx !== -1) {
         loadedFiles.splice(idx, 1);
+        clearCellSelection();
         renderTable();
     }
 };
 
-// 全写真へ一括反映
 window.applyToAllFiles = function(e, key, val) {
     e.stopPropagation();
     const info = EXIF_DICTIONARY[key] || { label: key };
@@ -1774,27 +1349,98 @@ window.applyToAllFiles = function(e, key, val) {
     statusText.textContent = `すべての写真の「${info.label}」に "${val}" を一括適用しました。`;
 };
 
-// 全編集リセット
 btnResetAll.addEventListener('click', () => {
     if (confirm('すべての写真の編集を初期状態に戻しますか？')) {
         loadedFiles.forEach(f => {
             f.currentMeta = Object.assign({}, f.originalMeta);
         });
+        clearCellSelection();
         renderTable();
         statusText.textContent = 'すべての編集を初期状態に戻しました。';
     }
 });
 
-// 全ファイル除外
 btnClearAll.addEventListener('click', () => {
     loadedFiles = [];
+    clearCellSelection();
     renderTable();
     statusText.textContent = 'すべてのファイルを除外しました。';
 });
 
 // ==========================================
-// 9. Excelコピペ対応（クリップボード貼り付け）
+// 9. Excel風ショートカット（矢印移動・値クリア・コピー・ペースト・Enter編集）
 // ==========================================
+window.addEventListener('keydown', async (e) => {
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+    if (isTyping) return;
+    if (!selectedCellInfo) return;
+
+    const { item, key, el, fileIdx, colIdx } = selectedCellInfo;
+    const info = EXIF_DICTIONARY[key] || { label: key };
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        if (info.editable && item.currentMeta[key] !== '') {
+            item.currentMeta[key] = '';
+            renderTable();
+            const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
+            if (newTd) selectCell(newTd, item, key, fileIdx, colIdx);
+            statusText.textContent = `「${info.label}」の値を消去しました。`;
+        }
+        return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        const copyVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : '';
+        try {
+            await navigator.clipboard.writeText(copyVal);
+            statusText.textContent = `「${info.label}」の値 "${copyVal}" をクリップボードにコピーしました！`;
+        } catch (err) {
+            console.warn('クリップボード書き込み失敗:', err);
+        }
+        return;
+    }
+
+    if (e.key === 'Enter' || e.key === 'F2') {
+        e.preventDefault();
+        startCellEdit(el, item, key);
+        return;
+    }
+
+    if (e.key === 'Escape') {
+        clearCellSelection();
+        return;
+    }
+
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+
+        let targetFileIdx = fileIdx;
+        let targetColIdx = colIdx;
+
+        if (e.key === 'ArrowUp') targetFileIdx--;
+        else if (e.key === 'ArrowDown') targetFileIdx++;
+        else if (e.key === 'ArrowLeft') targetColIdx--;
+        else if (e.key === 'ArrowRight') targetColIdx++;
+
+        if (targetFileIdx < 0 || targetFileIdx >= loadedFiles.length) return;
+        if (targetColIdx < 0 || targetColIdx >= activeFieldKeys.length) return;
+
+        const targetKey = activeFieldKeys[targetColIdx];
+        const targetTd = document.querySelector(`td[data-file-idx="${targetFileIdx}"][data-col-idx="${targetColIdx}"]`);
+
+        if (targetTd && targetTd.classList.contains('editable-cell')) {
+            const targetItem = loadedFiles[targetFileIdx];
+            selectCell(targetTd, targetItem, targetKey, targetFileIdx, targetColIdx);
+            scrollCellIntoViewSmart(targetTd, targetColIdx);
+        }
+        return;
+    }
+});
+
 window.addEventListener('paste', (e) => {
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
@@ -1808,10 +1454,15 @@ window.addEventListener('paste', (e) => {
     let startFileIdx = 0;
     let startColIdx = 0;
 
-    const hoveredCell = document.querySelector('.editable-cell:hover');
-    if (hoveredCell) {
-        startFileIdx = parseInt(hoveredCell.dataset.fileIdx, 10) || 0;
-        startColIdx = parseInt(hoveredCell.dataset.colIdx, 10) || 0;
+    if (selectedCellInfo) {
+        startFileIdx = selectedCellInfo.fileIdx;
+        startColIdx = selectedCellInfo.colIdx;
+    } else {
+        const hoveredCell = document.querySelector('.editable-cell:hover');
+        if (hoveredCell) {
+            startFileIdx = parseInt(hoveredCell.dataset.fileIdx, 10) || 0;
+            startColIdx = parseInt(hoveredCell.dataset.colIdx, 10) || 0;
+        }
     }
 
     let appliedCount = 0;
@@ -1849,8 +1500,6 @@ function escapeHtml(str) {
 // ==========================================
 // 10. 保存・ダウンロードパイプライン
 // ==========================================
-
-// 個別ダウンロード・共有ハンドラ（表の操作列から呼び出し）
 window.downloadSingleFile = async function(fileId) {
     const item = loadedFiles.find(f => f.id === fileId);
     if (!item) return;
@@ -1892,7 +1541,6 @@ window.downloadSingleFile = async function(fileId) {
     }
 };
 
-// 一括ダウンロード（PC環境用）
 downloadAllBtn.addEventListener('click', async () => {
     if (loadedFiles.length === 0) return;
 
@@ -1922,7 +1570,8 @@ downloadAllBtn.addEventListener('click', async () => {
 
     statusText.textContent = `全 ${loadedFiles.length} 枚のダウンロードが完了しました！`;
     downloadAllBtn.textContent = oldText;
-    downloadAllBtn.disabled = false;
+    const editedCount = document.querySelectorAll('.editable-cell.is-edited').length;
+    downloadAllBtn.disabled = (editedCount === 0);
 });
 
 async function exportSingleFile(item, opts) {
