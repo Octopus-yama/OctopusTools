@@ -349,46 +349,5 @@
      ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
 </footer>
 
-<script>
-// --- テーマ切り替え ---
-const themeBtn = document.getElementById('theme-btn');
-let isDark = localStorage.getItem('theme') === 'dark';
-
-const applyTheme = () => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    themeBtn.textContent = isDark ? '☀️' : '🌙';
-};
-
-applyTheme();
-
-themeBtn.addEventListener('click', () => {
-    isDark = !isDark;
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    applyTheme();
-});
-
-// --- PC向けワイド表示（最大2000px）切り替え（全ツール共通キー：octopus_wide_mode） ---
-const mainContainer = document.getElementById('main-container');
-const wideToggleBtn = document.getElementById('wide-toggle-btn');
-let isWideMode = localStorage.getItem('octopus_wide_mode') === 'true';
-
-const applyWideMode = () => {
-    if (isWideMode) {
-        mainContainer.classList.add('wide-mode');
-        wideToggleBtn.textContent = '⤡ 標準幅に戻す';
-    } else {
-        mainContainer.classList.remove('wide-mode');
-        wideToggleBtn.textContent = '⤢ ワイド表示';
-    }
-};
-applyWideMode();
-
-wideToggleBtn.addEventListener('click', () => {
-    isWideMode = !isWideMode;
-    localStorage.setItem('octopus_wide_mode', isWideMode ? 'true' : 'false');
-    applyWideMode();
-});
-</script>
-
 </body>
 </html>

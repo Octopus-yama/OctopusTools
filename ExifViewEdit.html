@@ -20,20 +20,42 @@
            EXIF View & Edit 固有スタイル
         ------------------------------------ */
 
-        /* ツールバー・モード切替 */
-        .table-toolbar {
+        /* 編集状態のカラーテーマ定義（ライト: 黄色系 / ダーク: 落ち着いた藍色系） */
+        :root {
+            --edited-bg: #fef9c3;
+            --edited-border: #f59e0b;
+            --edited-text: #9a3412;
+            --edited-row-bg: rgba(245, 158, 11, 0.06);
+            --edited-header-bg: #fef3c7;
+            --edited-header-text: #92400e;
+            --edited-selected-bg: #fde047;
+            --edited-selected-text: #713f12;
+        }
+
+        [data-theme="dark"] {
+            --edited-bg: #192738;
+            --edited-border: #3b6998;
+            --edited-text: #bfdbfe;
+            --edited-row-bg: rgba(74, 123, 176, 0.10);
+            --edited-header-bg: #1e2f45;
+            --edited-header-text: #93c5fd;
+            --edited-selected-bg: #243b59;
+            --edited-selected-text: #eff6ff;
+        }
+
+        /* 上段：モード切替＆ステータスバー（段上げ） */
+        .table-mode-bar {
             display: flex;
-            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 10px;
             gap: 12px;
-            margin-bottom: 12px;
+            flex-wrap: wrap;
         }
-        .toolbar-group {
+        .mode-btn-group {
             display: flex;
             align-items: center;
             gap: 8px;
-            flex-wrap: wrap;
         }
         .mode-badge-btn {
             background: var(--card-bg-sub);
@@ -50,6 +72,22 @@
             background: var(--primary);
             color: #ffffff;
             border-color: var(--primary);
+        }
+
+        /* 下段：ツールバー */
+        .table-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         /* 文字サイズ切り替えピッカー */
@@ -97,7 +135,7 @@
             align-items: center;
             gap: 4px;
         }
-        .sub-btn:hover {
+        .sub-btn:hover:not(:disabled) {
             color: var(--primary);
             border-color: var(--primary-border);
             background: var(--primary-light);
@@ -107,10 +145,18 @@
             border-color: var(--primary);
             color: var(--primary);
         }
-        .sub-btn-danger:hover {
+        .sub-btn-danger:hover:not(:disabled) {
             color: var(--danger-color);
             border-color: var(--danger-color);
             background: rgba(201, 74, 74, 0.08);
+        }
+        .sub-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-muted) !important;
+            background: var(--card-bg-sub) !important;
+            transform: none !important;
         }
 
         /* Excel風テーブルラッパー（縦リサイズ可） */
@@ -138,6 +184,9 @@
             height: 82vh !important;
             max-height: 82vh !important;
         }
+        .table-wrapper.is-selecting {
+            user-select: none !important;
+        }
 
         .excel-table {
             width: 100%;
@@ -145,6 +194,7 @@
             border-spacing: 0;
             text-align: left;
             white-space: nowrap;
+            user-select: none;
         }
         .excel-table th, .excel-table td {
             border-bottom: 1px solid var(--border-color);
@@ -213,7 +263,7 @@
         .th-editable::before { content: "✏️ "; font-size: 10px; }
         .th-readonly { color: var(--text-muted); font-weight: 600; }
         
-        /* 固定列 */
+        /* 固定列（写真/ファイル名） */
         .excel-table td.col-fixed, .excel-table th.col-fixed {
             position: sticky;
             left: 0;
@@ -252,32 +302,75 @@
         }
         .file-sub-text { color: var(--text-muted); }
 
-        /* 編集可能セル・編集済み・選択（フォーカス）スタイル */
-        .editable-cell {
+        /* ====================================================
+           編集済み状態の視覚的ハイライト（透過防止対応）
+        ==================================================== */
+        .excel-table tr.row-edited td {
+            background-color: var(--edited-row-bg);
+        }
+        .excel-table tr.row-edited td.col-fixed {
+            border-left: 3px solid var(--edited-border) !important;
+            background-color: var(--card-bg) !important;
+            background-image: linear-gradient(var(--edited-row-bg), var(--edited-row-bg)) !important;
+        }
+        .excel-table tr.row-edited:hover td.col-fixed {
+            background-color: var(--card-bg) !important;
+            background-image: linear-gradient(var(--primary-light), var(--primary-light)) !important;
+        }
+        .excel-table tr.row-edited .file-name-text::before {
+            content: "✏️ ";
+            font-size: 11px;
+        }
+
+        .excel-table th.col-edited {
+            background: var(--edited-header-bg) !important;
+            color: var(--edited-header-text) !important;
+            border-top: 2px solid var(--edited-border) !important;
+            font-weight: 700 !important;
+        }
+
+        /* 編集可能セル・閲覧セル・選択スタイル */
+        .editable-cell, .readonly-cell {
             cursor: pointer;
             position: relative;
             min-width: 90px;
             transition: background 0.12s, outline 0.12s;
             user-select: none;
         }
-        .editable-cell:hover {
+        .editable-cell:hover, .readonly-cell:hover {
             background: rgba(96, 125, 59, 0.08);
         }
-        /* Excel風セル選択枠 */
-        .editable-cell.is-selected {
+
+        /* 編集可能・閲覧専用共通の選択枠 */
+        .editable-cell.is-selected, .readonly-cell.is-selected {
             outline: 2px solid var(--primary) !important;
             outline-offset: -2px;
-            background: rgba(96, 125, 59, 0.15) !important;
+            background: rgba(96, 125, 59, 0.16) !important;
             z-index: 3;
         }
+
         .editable-cell.is-edited {
-            background: var(--edited-bg) !important;
+            background-color: var(--edited-bg) !important;
             color: var(--edited-text) !important;
             font-weight: 700;
         }
         .editable-cell.is-edited.is-selected {
-            background: #fef3c7 !important;
+            background-color: var(--edited-selected-bg) !important;
+            color: var(--edited-selected-text) !important;
+            outline: 2px solid var(--edited-border) !important;
         }
+
+        .editable-cell.is-invalid {
+            background: rgba(201, 74, 74, 0.14) !important;
+            color: var(--danger-color) !important;
+            outline: 2px solid var(--danger-color) !important;
+            outline-offset: -2px;
+            font-weight: 700;
+        }
+        .editable-cell.is-invalid.is-selected {
+            background: rgba(201, 74, 74, 0.24) !important;
+        }
+
         .editable-cell.is-editing {
             padding: 0 !important;
             background: var(--card-bg) !important;
@@ -307,7 +400,7 @@
             display: flex;
         }
 
-        /* 操作列のボタングループ（誤クリック防止の余白） */
+        /* 操作列のボタングループ */
         .row-action-group {
             display: inline-flex;
             align-items: center;
@@ -346,7 +439,18 @@
         .readonly-cell {
             color: var(--text-muted);
             background: rgba(0, 0, 0, 0.015);
-            cursor: default;
+        }
+        [data-theme="dark"] .readonly-cell {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        /* 編集件数バッジの強調表示 */
+        #edit-count-badge {
+            color: #dc2626 !important;
+            font-weight: 700;
+        }
+        [data-theme="dark"] #edit-count-badge {
+            color: #f87171 !important;
         }
 
         /* 吹き出しツールチップ */
@@ -409,11 +513,21 @@
 
     <!-- メタデータ編集ワークスペース -->
     <div id="table-workspace" style="display: none;">
+        
+        <!-- 上段：モード切替＆編集件数ステータス（段上げ配置） -->
+        <div class="table-mode-bar">
+            <div class="mode-btn-group">
+                <button type="button" class="mode-badge-btn active" id="btn-mode-simple">簡易モード</button>
+                <button type="button" class="mode-badge-btn" id="btn-mode-detail">詳細モード</button>
+            </div>
+            <span id="edit-count-badge" style="font-size: 12px; font-weight: 700;"></span>
+        </div>
+
+        <!-- 下段：操作ツールバー -->
         <div class="table-toolbar">
             <div class="toolbar-group">
-                <button type="button" class="mode-badge-btn active" id="btn-mode-simple">簡易モード</button>
-                <button type="button" class="mode-badge-btn" id="btn-mode-detail">詳細モード (全メタデータ)</button>
-                
+                <button type="button" class="sub-btn" id="btn-undo" disabled title="1つ前に戻す (Ctrl+Z / 最大20回)">↩ 戻る</button>
+
                 <!-- 文字サイズ変更ピッカー -->
                 <div class="font-size-picker" title="表内の文字サイズと行の高さを切り替えます">
                     <span style="font-size: 11px; color: var(--text-muted); padding-left: 4px;">文字:</span>
@@ -421,8 +535,6 @@
                     <button type="button" class="font-size-btn" data-size="small">小</button>
                     <button type="button" class="font-size-btn" data-size="mini">極小</button>
                 </div>
-
-                <span id="edit-count-badge" style="font-size: 12px; font-weight: 700; color: var(--edited-text); margin-left: 4px;"></span>
             </div>
 
             <div class="toolbar-group">
@@ -480,7 +592,7 @@
         </div>
     </div>
 
-    <!-- 一括ダウンロードボタン（編集済みセルが1箇所以上ある場合のみ活性化） -->
+    <!-- 一括ダウンロードボタン -->
     <button id="download-all-btn" class="main-btn" disabled>一括ダウンロードする</button>
     <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
 </div>
@@ -494,8 +606,12 @@
 
         <h3> 使い方</h3>
         <p>・枠内または<strong>表示されたExif表の上</strong>にJPEG写真をドラッグ＆ドロップして読み込みます（PCは最大50枚、スマホは最大10枚まで）。</p>
-        <p>・各セルを<strong>クリックして選択</strong>すると、Excelのように枠が表示されます。その状態で <strong>矢印キー（↑ / ↓ / ← / →）でセル移動</strong>、<strong>Deleteキーで値クリア</strong>、<strong>Ctrl+C（Cmd+C）でコピー</strong>、<strong>Ctrl+V（Cmd+V）でペースト</strong> が可能です。</p>
-        <p>・セルをダブルクリックするか、選択状態で <strong>Enter / F2 キー</strong> を押すと、その場で直接テキスト編集モードになります。</p>
+        <p>・<strong>マウス・キーボード操作</strong>：編集可能セルだけでなく、<strong>閲覧専用セルもクリックやドラッグ、十字キー（↑ / ↓ / ← / →）で自由に選択・移動</strong>できます。さらに Shift＋クリックで連続範囲選択、Ctrl（Cmd）＋クリックで飛び地追加選択が可能です。</p>
+        <p>・<strong>コピー＆ペースト</strong>：セルを選択した状態で <strong>Ctrl+C（Cmd+C）を押すと、編集可能セル・閲覧専用セルを問わずクリップボードへコピー</strong>されます（複数選択時はExcel互換のTSV形式）。<strong>Ctrl+V（Cmd+V）</strong>でペーストでき、単一値を複数セルに一括流し込みも可能です（※閲覧専用セルへのペーストは自動的にスキップされます）。</p>
+        <p>・<strong>インライン編集</strong>：編集可能セルをダブルクリックするか、選択状態で <strong>Enter / F2 キー</strong> を押すとテキスト編集モードになります。編集中に Enter で確定して選択状態に戻り、十字キーで確定してその方向へ移動できます（※閲覧専用セルは編集モードになりません）。</p>
+        <p>・<strong>値の一括消去</strong>：選択状態で <strong>Delete / Backspace キー</strong> を押すと、選択中の編集可能セルの値が一括消去されます（保存時にExifから完全削除）。</p>
+        <p>・<strong>操作のやり直し（Undo）</strong>：表の値を変更した直後、ツールバーの<strong>「↩ 戻る」ボタン</strong>または <strong>Ctrl+Z（Cmd+Z）</strong>を押すと、直前の状態へ戻せます（最大20回まで）。</p>
+        <p>・変更を加えたセルはハイライト表示され、該当する写真の行と項目（列）にも編集マークが付きます。変更箇所の総数は上部に赤字で表示されます。</p>
         <p>・各行の「操作」列にある<strong>「⬇ 保存（iOSは 共有）」</strong>ボタンを押すと、その写真のExif変更内容を反映して個別保存できます。</p>
         <p>・Exifの値を1箇所以上編集すると、下部の「一括ダウンロードする」ボタンが押せるようになり、全写真をまとめてダウンロードできます（iOS環境は各行のボタンから保存してください）。</p>
         <p>・PC環境では、表の右下をマウスでドラッグして<strong>縦の表示サイズを自由に変更</strong>できます。上部の「⤡ 縦を広げる」ボタンで一撃で画面いっぱいに拡大も可能です。</p>
@@ -504,7 +620,7 @@
         <h3> ライセンスについて</h3>
         <p>・本ツールでは、オープンソースのライブラリを利用しています。著作権およびライセンスは各権利者に帰属します。</p>
         <ul>
-            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)</li>
+            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)[cite: 1]</li>
             <li><a href="https://github.com/MikeKovarik/exifr" target="_blank" rel="noopener">exifr</a> (MIT License)</li>
         </ul>
     </div>
@@ -515,1222 +631,8 @@
      ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
 </footer>
 
-<script>
-// ==========================================
-// 1. 定数定義・システム環境判定
-// ==========================================
-const MAX_FILES_PC = 50;
-const MAX_FILES_MOBILE = 10;
-
-const isIOS = () => {
-    const ua = navigator.userAgent.toLowerCase();
-    if (/iphone|ipod/.test(ua)) return true;
-    if (/ipad/.test(ua)) return true;
-    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-    return false;
-};
-
-const isMobileDevice = () => {
-    return isIOS() || /android|mobile/.test(navigator.userAgent.toLowerCase());
-};
-
-const currentLimit = isMobileDevice() ? MAX_FILES_MOBILE : MAX_FILES_PC;
-
-// テーマ切り替え
-const themeBtn = document.getElementById('theme-btn');
-let isDark = localStorage.getItem('theme') === 'dark';
-const applyTheme = () => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    themeBtn.textContent = isDark ? '☀️' : '🌙';
-};
-applyTheme();
-themeBtn.addEventListener('click', () => {
-    isDark = !isDark;
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    applyTheme();
-});
-
-// PCワイド表示切り替え（全ツール共通キー：octopus_wide_mode）
-const mainContainer = document.getElementById('main-container');
-const wideToggleBtn = document.getElementById('wide-toggle-btn');
-let isWideMode = (localStorage.getItem('octopus_wide_mode') ?? localStorage.getItem('viewedit_wide_mode')) === 'true';
-
-const applyWideMode = () => {
-    if (isWideMode) {
-        mainContainer.classList.add('wide-mode');
-        wideToggleBtn.textContent = '⤡ 標準幅に戻す';
-    } else {
-        mainContainer.classList.remove('wide-mode');
-        wideToggleBtn.textContent = '⤢ ワイド表示';
-    }
-};
-applyWideMode();
-
-wideToggleBtn.addEventListener('click', () => {
-    isWideMode = !isWideMode;
-    localStorage.setItem('octopus_wide_mode', isWideMode ? 'true' : 'false');
-    applyWideMode();
-});
-
-// アコーディオン開閉
-window.toggleAccordion = function(contentId, headerEl) {
-    const content = document.getElementById(contentId);
-    content.classList.toggle('open');
-    const span = headerEl.querySelector('span');
-    span.textContent = content.classList.contains('open') ? '▲' : '▼';
-};
-
-// ==========================================
-// 2. EXIF公式仕様準拠 タグ辞書マスタ
-// ==========================================
-const EXIF_DICTIONARY = {
-    Make: { label: 'カメラメーカー', hex: '0x010F', desc: 'カメラの製造メーカー名', ifd: '0th', editable: true, type: 'text' },
-    Model: { label: 'カメラ機種名', hex: '0x0110', desc: 'カメラの機種名・型番', ifd: '0th', editable: true, type: 'text' },
-    LensModel: { label: 'レンズモデル名', hex: '0xA434', desc: '装着レンズの商品名・型式', ifd: 'Exif', editable: true, type: 'text' },
-    FocalLength: { label: 'レンズ焦点距離 (mm)', hex: '0x920A', desc: 'レンズの実焦点距離（mm）', ifd: 'Exif', editable: true, type: 'number' },
-    FNumber: { label: '絞り値 (F値)', hex: '0x829D', desc: '撮影時の絞り数値', ifd: 'Exif', editable: true, type: 'number' },
-    ExposureTime: { label: 'シャッター速度', hex: '0x829A', desc: '露出時間（秒）', ifd: 'Exif', editable: true, type: 'text' },
-    ISO: { label: 'ISO感度', hex: '0x8827', desc: '撮影時のISO感度（PhotographicSensitivity）', ifd: 'Exif', editable: true, type: 'number' },
-    DateTimeOriginal: { label: '原画像生成日時', hex: '0x9003', desc: 'シャッターを切った撮影日時', ifd: 'Exif', editable: true, type: 'text' },
-    Artist: { label: '作成者名', hex: '0x013B', desc: '撮影者または作成者名', ifd: '0th', editable: true, type: 'text' },
-    Copyright: { label: '著作権者名', hex: '0x8298', desc: '写真の著作権者情報', ifd: '0th', editable: true, type: 'text' },
-    GPSLatitude: { label: '緯度 (10進)', hex: '0x0002', desc: '撮影地点の緯度数値', ifd: 'GPS', editable: true, type: 'number' },
-    GPSLongitude: { label: '経度 (10進)', hex: '0x0004', desc: '撮影地点の経度数値', ifd: 'GPS', editable: true, type: 'number' },
-    ImageDescription: { label: '画像タイトル', hex: '0x010E', desc: '画像のタイトルや説明', ifd: '0th', editable: true, type: 'text' },
-    Software: { label: '使用ソフトウェア名', hex: '0x0131', desc: '処理ソフトやファームウェア', ifd: '0th', editable: true, type: 'text' },
-    UserComment: { label: 'ユーザコメント', hex: '0x9286', desc: '自由記述コメント欄', ifd: 'Exif', editable: true, type: 'text' },
-    LensMake: { label: 'レンズ製造者', hex: '0xA433', desc: '装着レンズのメーカー名', ifd: 'Exif', editable: true, type: 'text' },
-    CameraOwnerName: { label: 'カメラ所有者名', hex: '0xA430', desc: '機材のオーナー氏名', ifd: 'Exif', editable: true, type: 'text' },
-
-    FocalLengthIn35mmFormat: { label: '35mm換算焦点距離', hex: '0xA405', desc: 'ライカ判換算の画角値（mm）', ifd: 'Exif', editable: false },
-    ExposureProgram: { label: '露出プログラム', hex: '0x8822', desc: '絞り優先やマニュアル等の露出制御', ifd: 'Exif', editable: false },
-    MeteringMode: { label: '測光方式', hex: '0x9207', desc: '評価・中央重点・スポット等', ifd: 'Exif', editable: false },
-    LightSource: { label: '光源種別', hex: '0x9208', desc: '撮影環境の光源種別', ifd: 'Exif', editable: false },
-    Flash: { label: 'フラッシュ設定', hex: '0x9209', desc: '発光の有無や発光モード', ifd: 'Exif', editable: false },
-    WhiteBalance: { label: 'ホワイトバランス', hex: '0xA403', desc: 'オートまたはマニュアル', ifd: 'Exif', editable: false },
-    ExposureMode: { label: '露出モード', hex: '0xA402', desc: '自動露出か手動か', ifd: 'Exif', editable: false },
-    ExposureBiasValue: { label: '露出補正値', hex: '0x9204', desc: '露出補正のEV値', ifd: 'Exif', editable: false },
-    ColorSpace: { label: '色空間情報', hex: '0xA001', desc: 'sRGBまたはAdobeRGB', ifd: 'Exif', editable: false },
-    PixelXDimension: { label: '実効画像幅', hex: '0xA002', desc: '記録された有効画像幅', ifd: 'Exif', editable: false },
-    PixelYDimension: { label: '実効画像高さ', hex: '0xA003', desc: '記録された有効画像高', ifd: 'Exif', editable: false },
-    BodySerialNumber: { label: 'カメラシリアル番号', hex: '0xA431', desc: 'カメラ本体の製造固有番号', ifd: 'Exif', editable: false },
-    LensSerialNumber: { label: 'レンズシリアル番号', hex: '0xA435', desc: '装着レンズの製造固有番号', ifd: 'Exif', editable: false },
-    Orientation: { label: '画像方向', hex: '0x0112', desc: '撮影時のカメラの向き', ifd: '0th', editable: false },
-    GPSAltitude: { label: '高度 (標高)', hex: '0x0006', desc: '海抜からの標高（m）', ifd: 'GPS', editable: false },
-    GPSTimeStamp: { label: 'GPS世界標準時', hex: '0x0007', desc: 'GPS衛星が刻む世界標準時', ifd: 'GPS', editable: false },
-    GPSDateStamp: { label: 'GPS日付', hex: '0x001D', desc: 'GPS衛星の日付情報（UTC）', ifd: 'GPS', editable: false },
-    DateTime: { label: 'ファイル変更日時', hex: '0x0132', desc: 'ファイルの最終更新日時', ifd: '0th', editable: false },
-    DateTimeDigitized: { label: 'デジタル化日時', hex: '0x9004', desc: 'デジタル記録された日時', ifd: 'Exif', editable: false },
-    ImageWidth: { label: '画像幅', hex: '0x0100', desc: '画像の横幅画素数', ifd: '0th', editable: false },
-    ImageLength: { label: '画像高さ', hex: '0x0101', desc: '画像の縦幅画素数', ifd: '0th', editable: false },
-    BitsPerSample: { label: 'ビットの深さ', hex: '0x0102', desc: '各色成分のビット数', ifd: '0th', editable: false },
-    Compression: { label: '圧縮方式', hex: '0x0103', desc: '圧縮アルゴリズム', ifd: '0th', editable: false },
-    PhotometricInterpretation: { label: '画素構成', hex: '0x0106', desc: 'カラーモデル・色空間', ifd: '0th', editable: false },
-    SamplesPerPixel: { label: 'コンポーネント数', hex: '0x0115', desc: '1画素あたりの成分数', ifd: '0th', editable: false },
-    PlanarConfiguration: { label: '画像データの並び', hex: '0x011C', desc: '面順次または点順次', ifd: '0th', editable: false },
-    YCbCrSubSampling: { label: '色画素の間引き率', hex: '0x0212', desc: '輝度と色差の間引き比', ifd: '0th', editable: false },
-    YCbCrPositioning: { label: '色画素の配置', hex: '0x0213', desc: '色差成分の配置位置', ifd: '0th', editable: false },
-    XResolution: { label: '幅の解像度', hex: '0x011A', desc: '幅方向の解像度数値', ifd: '0th', editable: false },
-    YResolution: { label: '高さの解像度', hex: '0x011B', desc: '高さ方向の解像度数値', ifd: '0th', editable: false },
-    ResolutionUnit: { label: '解像度単位', hex: '0x0128', desc: '解像度の単位（インチ等）', ifd: '0th', editable: false },
-    TransferFunction: { label: '再生階調特性', hex: '0x012D', desc: '階調変換カーブ', ifd: '0th', editable: false },
-    WhitePoint: { label: '参照白色点', hex: '0x013E', desc: '白色点の色度座標', ifd: '0th', editable: false },
-    PrimaryChromaticities: { label: '原色の色度座標値', hex: '0x013F', desc: 'RGB3原色の色度座標', ifd: '0th', editable: false },
-    YCbCrCoefficients: { label: '色変換マトリクス係数', hex: '0x0211', desc: 'RGBからYCbCrへの変換係数', ifd: '0th', editable: false },
-    ReferenceBlackWhite: { label: '白頭/黒頭参照値', hex: '0x0214', desc: '基準白と基準黒のレベル', ifd: '0th', editable: false },
-    ExifVersion: { label: 'Exifバージョン', hex: '0x9000', desc: '準拠しているExif規格', ifd: 'Exif', editable: false },
-    FlashpixVersion: { label: '対応Flashpix版', hex: '0xA000', desc: '対応Flashpix仕様', ifd: 'Exif', editable: false },
-    ComponentsConfiguration: { label: 'コンポーネント構成', hex: '0x9101', desc: '各チャンネルの配置構造', ifd: 'Exif', editable: false },
-    CompressedBitsPerPixel: { label: '画像圧縮モード', hex: '0x9102', desc: '圧縮時のビットレート比', ifd: 'Exif', editable: false },
-    DigitalZoomRatio: { label: 'デジタルズーム倍率', hex: '0xA404', desc: '電子ズームの拡大率', ifd: 'Exif', editable: false },
-    SceneCaptureType: { label: '撮影シーンタイプ', hex: '0xA406', desc: '人物・風景・夜景など', ifd: 'Exif', editable: false },
-    Contrast: { label: 'コントラスト', hex: '0xA408', desc: '階調の強弱設定', ifd: 'Exif', editable: false },
-    Saturation: { label: '彩度', hex: '0xA409', desc: '色の鮮やかさ設定', ifd: 'Exif', editable: false },
-    Sharpness: { label: 'シャープネス', hex: '0xA40A', desc: '輪郭強調の度合い', ifd: 'Exif', editable: false },
-    GPSSpeed: { label: '移動速度', hex: '0x000D', desc: '撮影時の移動速度数値', ifd: 'GPS', editable: false },
-    GPSImgDirection: { label: '撮影方角', hex: '0x0011', desc: 'レンズが向いていた方角（度）', ifd: 'GPS', editable: false }
-};
-
-const EDITABLE_PRIORITY_KEYS = [
-    'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
-    'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude',
-    'ImageDescription', 'Software', 'UserComment', 'LensMake', 'CameraOwnerName'
-];
-
-const READONLY_PRIORITY_KEYS = [
-    'FocalLengthIn35mmFormat', 'ExposureProgram', 'MeteringMode', 'LightSource', 'Flash',
-    'WhiteBalance', 'ExposureMode', 'ExposureBiasValue', 'ColorSpace',
-    'PixelXDimension', 'PixelYDimension', 'BodySerialNumber', 'LensSerialNumber',
-    'Orientation', 'GPSAltitude', 'GPSTimeStamp', 'GPSDateStamp', 'DateTime'
-];
-
-const SIMPLE_FIELD_KEYS = [
-    'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
-    'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude', 'ImageDescription'
-];
-
-// ==========================================
-// 3. 状態管理
-// ==========================================
-let loadedFiles = [];
-let displayMode = localStorage.getItem('viewedit_display_mode') || 'simple';
-let activeFieldKeys = [];
-let currentSort = { key: null, asc: true };
-
-let selectedCellInfo = null;
-
-const dropArea = document.getElementById('drop-area');
-const fileInput = document.getElementById('file-input');
-const tableWorkspace = document.getElementById('table-workspace');
-const tableWrapper = document.getElementById('table-wrapper');
-const mainExcelTable = document.getElementById('main-excel-table');
-const tableHead = document.getElementById('table-head');
-const tableBody = document.getElementById('table-body');
-const btnModeSimple = document.getElementById('btn-mode-simple');
-const btnModeDetail = document.getElementById('btn-mode-detail');
-const btnResetAll = document.getElementById('btn-reset-all-edits');
-const btnClearAll = document.getElementById('btn-clear-all');
-const btnExpandHeight = document.getElementById('btn-expand-height');
-const editCountBadge = document.getElementById('edit-count-badge');
-const downloadAllBtn = document.getElementById('download-all-btn');
-const statusText = document.getElementById('status-text');
-const limitNotice = document.getElementById('limit-notice');
-
-const tooltip = document.getElementById('meta-tooltip');
-const ttTitle = document.getElementById('tt-title');
-const ttTag = document.getElementById('tt-tag');
-const ttDesc = document.getElementById('tt-desc');
-const ttStatus = document.getElementById('tt-status');
-
-const filenameModeSelect = document.getElementById('filename-mode');
-const compressChk = document.getElementById('compress-chk');
-const qualitySliderContainer = document.getElementById('quality-slider-container');
-const qualitySlider = document.getElementById('quality-slider');
-const qualityVal = document.getElementById('quality-val');
-
-limitNotice.textContent = `JPEG (.jpg / .jpeg) 対応（現在の上限: 最大 ${currentLimit} 枚）`;
-
-if (isIOS()) {
-    downloadAllBtn.style.display = 'none';
-}
-
-// ==========================================
-// 4. 文字サイズ＆高さ可変の制御と復元
-// ==========================================
-let currentTableFontSize = localStorage.getItem('viewedit_table_font_size') || 'normal';
-let isHeightExpanded = localStorage.getItem('viewedit_height_expanded') === 'true';
-
-function applyTableFontSize(sizeKey) {
-    currentTableFontSize = sizeKey;
-    localStorage.setItem('viewedit_table_font_size', sizeKey);
-
-    mainExcelTable.classList.remove('font-size-normal', 'font-size-small', 'font-size-mini');
-    mainExcelTable.classList.add(`font-size-${sizeKey}`);
-
-    document.querySelectorAll('.font-size-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.size === sizeKey);
-    });
-}
-
-document.querySelectorAll('.font-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyTableFontSize(btn.dataset.size));
-});
-applyTableFontSize(currentTableFontSize);
-
-function applyTableHeightExpand() {
-    if (isHeightExpanded) {
-        tableWrapper.classList.add('is-expanded');
-        btnExpandHeight.textContent = '⤡ 標準高さに戻す';
-        btnExpandHeight.classList.add('active');
-    } else {
-        tableWrapper.classList.remove('is-expanded');
-        btnExpandHeight.textContent = '⤡ 縦を広げる';
-        btnExpandHeight.classList.remove('active');
-    }
-}
-
-btnExpandHeight.addEventListener('click', () => {
-    isHeightExpanded = !isHeightExpanded;
-    localStorage.setItem('viewedit_height_expanded', isHeightExpanded ? 'true' : 'false');
-    applyTableHeightExpand();
-});
-applyTableHeightExpand();
-
-const resizeObserver = new ResizeObserver(entries => {
-    for (let entry of entries) {
-        if (!isHeightExpanded && entry.contentRect.height > 0) {
-            localStorage.setItem('viewedit_table_custom_height', `${Math.round(entry.contentRect.height)}px`);
-        }
-    }
-});
-resizeObserver.observe(tableWrapper);
-
-const savedCustomHeight = localStorage.getItem('viewedit_table_custom_height');
-if (savedCustomHeight && !isHeightExpanded) {
-    tableWrapper.style.height = savedCustomHeight;
-}
-
-// 設定復元
-if (filenameModeSelect) {
-    const savedMode = localStorage.getItem('viewedit_filename_mode');
-    if (savedMode) filenameModeSelect.value = savedMode;
-    filenameModeSelect.addEventListener('change', (e) => localStorage.setItem('viewedit_filename_mode', e.target.value));
-}
-
-if (compressChk) {
-    const isCompress = localStorage.getItem('viewedit_compress_enabled') === 'true';
-    compressChk.checked = isCompress;
-    qualitySliderContainer.style.display = isCompress ? 'block' : 'none';
-    compressChk.addEventListener('change', (e) => {
-        qualitySliderContainer.style.display = e.target.checked ? 'block' : 'none';
-        localStorage.setItem('viewedit_compress_enabled', e.target.checked);
-    });
-}
-
-if (qualitySlider) {
-    const savedQ = localStorage.getItem('viewedit_jpeg_quality') || '92';
-    qualitySlider.value = savedQ;
-    qualityVal.textContent = `${savedQ}%`;
-    qualitySlider.addEventListener('input', (e) => {
-        qualityVal.textContent = `${e.target.value}%`;
-        localStorage.setItem('viewedit_jpeg_quality', e.target.value);
-    });
-}
-
-function updateModeButtons() {
-    btnModeSimple.classList.toggle('active', displayMode === 'simple');
-    btnModeDetail.classList.toggle('active', displayMode === 'detail');
-    localStorage.setItem('viewedit_display_mode', displayMode);
-}
-btnModeSimple.addEventListener('click', () => {
-    displayMode = 'simple';
-    updateModeButtons();
-    clearCellSelection();
-    renderTable();
-});
-btnModeDetail.addEventListener('click', () => {
-    displayMode = 'detail';
-    updateModeButtons();
-    clearCellSelection();
-    renderTable();
-});
-updateModeButtons();
-
-// ==========================================
-// 5. フローティング吹き出し（ツールチップ）制御
-// ==========================================
-function showTooltip(e, key) {
-    const info = EXIF_DICTIONARY[key] || { label: key, hex: '-', desc: 'Exifメタデータタグ', editable: false };
-    
-    ttTitle.textContent = info.label;
-    ttTag.textContent = `${key} (${info.hex || 'Tag'})`;
-    ttDesc.textContent = info.desc || 'メタデータ情報';
-
-    if (info.editable) {
-        ttStatus.textContent = '✏️ 編集可能';
-        ttStatus.className = 'tt-status editable';
-    } else {
-        ttStatus.textContent = '🔒 閲覧のみ';
-        ttStatus.className = 'tt-status readonly';
-    }
-
-    tooltip.style.display = 'block';
-    positionTooltip(e);
-}
-
-function positionTooltip(e) {
-    const x = e.clientX + 14;
-    const y = e.clientY + 14;
-    const ttWidth = 280;
-    const ttHeight = 110;
-
-    const left = (x + ttWidth > window.innerWidth) ? (window.innerWidth - ttWidth - 16) : x;
-    const top = (y + ttHeight > window.innerHeight) ? (y - ttHeight - 20) : y;
-
-    tooltip.style.left = `${Math.max(8, left)}px`;
-    tooltip.style.top = `${Math.max(8, top)}px`;
-}
-
-function hideTooltip() {
-    tooltip.style.display = 'none';
-}
-
-// ==========================================
-// 6. ソート制御ロジック
-// ==========================================
-function sortFilesBy(key) {
-    clearCellSelection();
-    if (currentSort.key === key) {
-        currentSort.asc = !currentSort.asc;
-    } else {
-        currentSort.key = key;
-        currentSort.asc = true;
-    }
-
-    const mult = currentSort.asc ? 1 : -1;
-
-    loadedFiles.sort((a, b) => {
-        if (key === 'file_name') {
-            return a.file.name.localeCompare(b.file.name, 'ja') * mult;
-        }
-
-        const valA = a.currentMeta[key] !== undefined ? a.currentMeta[key] : (a.allTags[key] !== undefined ? a.allTags[key] : '');
-        const valB = b.currentMeta[key] !== undefined ? b.currentMeta[key] : (b.allTags[key] !== undefined ? b.allTags[key] : '');
-
-        if (valA === '' && valB === '') return 0;
-        if (valA === '') return 1;
-        if (valB === '') return -1;
-
-        const numA = parseFloat(valA);
-        const numB = parseFloat(valB);
-        if (!isNaN(numA) && !isNaN(numB) && String(numA) === String(valA).trim() && String(numB) === String(valB).trim()) {
-            return (numA - numB) * mult;
-        }
-
-        return String(valA).localeCompare(String(valB), 'ja') * mult;
-    });
-
-    renderTable();
-}
-
-// ==========================================
-// 7. ファイル解析＆読み込み
-// ==========================================
-dropArea.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-dropArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropArea.classList.add('drag-over');
-});
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
-dropArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropArea.classList.remove('drag-over');
-    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
-});
-
-let tableDragCounter = 0;
-
-tableWrapper.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    tableDragCounter++;
-    tableWrapper.classList.add('drag-over');
-});
-
-tableWrapper.addEventListener('dragover', (e) => {
-    e.preventDefault();
-});
-
-tableWrapper.addEventListener('dragleave', (e) => {
-    tableDragCounter--;
-    if (tableDragCounter <= 0) {
-        tableDragCounter = 0;
-        tableWrapper.classList.remove('drag-over');
-    }
-});
-
-tableWrapper.addEventListener('drop', (e) => {
-    e.preventDefault();
-    tableDragCounter = 0;
-    tableWrapper.classList.remove('drag-over');
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        handleFiles(e.dataTransfer.files);
-    }
-});
-
-async function handleFiles(fileListObj) {
-    const files = Array.from(fileListObj).filter(f => /\.(jpe?g)$/i.test(f.name) || f.type === 'image/jpeg');
-    let added = 0;
-    let skipped = 0;
-
-    statusText.textContent = '写真のメタデータを解析中...';
-
-    for (const file of files) {
-        if (loadedFiles.length >= currentLimit) {
-            skipped++;
-            continue;
-        }
-
-        const id = 'f_' + Math.random().toString(36).substring(2, 9);
-        const rawDataUrl = await readFileAsDataURL(file);
-        const { originalMeta, allTags } = await extractMetadata(file);
-        const thumbUrl = await generateMiniThumb(file);
-
-        loadedFiles.push({
-            id,
-            file,
-            rawDataUrl,
-            thumbUrl,
-            originalMeta: Object.assign({}, originalMeta),
-            currentMeta: Object.assign({}, originalMeta),
-            allTags
-        });
-        added++;
-    }
-
-    fileInput.value = '';
-    clearCellSelection();
-    renderTable();
-
-    if (skipped > 0) {
-        statusText.textContent = `上限（${currentLimit}枚）に達したため、${skipped}枚をスキップしました。`;
-    } else if (added > 0) {
-        statusText.textContent = `${added}枚の写真を追加しました！（現在 ${loadedFiles.length} 枚）`;
-    }
-}
-
-async function extractMetadata(file) {
-    const originalMeta = {};
-    let allTags = {};
-
-    try {
-        if (typeof exifr !== 'undefined') {
-            allTags = await exifr.parse(file, { tiff: true, exif: true, gps: true, makerNote: false }) || {};
-
-            Object.keys(EXIF_DICTIONARY).forEach(key => {
-                let val = allTags[key];
-                if (val !== undefined && val !== null) {
-                    if (val instanceof Date) {
-                        const pad = n => String(n).padStart(2, '0');
-                        originalMeta[key] = `${val.getFullYear()}:${pad(val.getMonth() + 1)}:${pad(val.getDate())} ${pad(val.getHours())}:${pad(val.getMinutes())}:${pad(val.getSeconds())}`;
-                    } else if (typeof val === 'number') {
-                        originalMeta[key] = Math.round(val * 1000) / 1000;
-                    } else {
-                        originalMeta[key] = String(val);
-                    }
-                } else {
-                    originalMeta[key] = '';
-                }
-            });
-
-            const isoVal = allTags.ISO ?? allTags.PhotographicSensitivity ?? allTags.ISOSpeedRatings;
-            if (isoVal != null && isoVal !== '') {
-                originalMeta.ISO = (typeof isoVal === 'number') ? isoVal : String(isoVal);
-            }
-
-            if (allTags.latitude != null) originalMeta.GPSLatitude = Math.round(allTags.latitude * 100000) / 100000;
-            if (allTags.longitude != null) originalMeta.GPSLongitude = Math.round(allTags.longitude * 100000) / 100000;
-        }
-    } catch (err) {
-        console.warn(`[${file.name}] 解析エラー:`, err);
-    }
-
-    return { originalMeta, allTags };
-}
-
-function generateMiniThumb(file) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const size = 56;
-            let w = img.width;
-            let h = img.height;
-            if (w > h) {
-                w = Math.round((w * size) / h);
-                h = size;
-            } else {
-                h = Math.round((h * size) / w);
-                w = size;
-            }
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-            URL.revokeObjectURL(url);
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve('');
-        };
-        img.src = url;
-    });
-}
-
-function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-// ==========================================
-// 8. テーブル描画＆インライン・ショートカット編集
-// ==========================================
-function clearCellSelection() {
-    if (selectedCellInfo && selectedCellInfo.el) {
-        selectedCellInfo.el.classList.remove('is-selected');
-    }
-    selectedCellInfo = null;
-}
-
-function selectCell(td, item, key, fileIdx, colIdx) {
-    if (isMobileDevice()) return;
-    if (td.classList.contains('is-editing')) return;
-
-    clearCellSelection();
-    td.classList.add('is-selected');
-    selectedCellInfo = {
-        el: td,
-        fileId: item.id,
-        key: key,
-        fileIdx: fileIdx,
-        colIdx: colIdx,
-        item: item
-    };
-}
-
-function scrollCellIntoViewSmart(targetTd, targetColIdx) {
-    if (!targetTd || !tableWrapper) return;
-
-    if (targetColIdx === 0) {
-        tableWrapper.scrollLeft = 0;
-        targetTd.scrollIntoView({ block: 'nearest' });
-        return;
-    }
-
-    const wrapperRect = tableWrapper.getBoundingClientRect();
-    const cellRect = targetTd.getBoundingClientRect();
-    const fixedCol = tableWrapper.querySelector('th.col-fixed');
-    const fixedWidth = fixedCol ? fixedCol.offsetWidth : 200;
-
-    const visibleLeftLimit = wrapperRect.left + fixedWidth;
-    if (cellRect.left < visibleLeftLimit) {
-        tableWrapper.scrollLeft -= (visibleLeftLimit - cellRect.left + 16);
-    } else if (cellRect.right > wrapperRect.right) {
-        tableWrapper.scrollLeft += (cellRect.right - wrapperRect.right + 16);
-    }
-    targetTd.scrollIntoView({ block: 'nearest' });
-}
-
-function renderTable() {
-    if (loadedFiles.length === 0) {
-        tableWorkspace.style.display = 'none';
-        downloadAllBtn.disabled = true;
-        currentSort = { key: null, asc: true };
-        clearCellSelection();
-        return;
-    }
-
-    tableWorkspace.style.display = 'block';
-
-    if (displayMode === 'simple') {
-        activeFieldKeys = SIMPLE_FIELD_KEYS.slice();
-    } else {
-        const orderedSet = new Set();
-        EDITABLE_PRIORITY_KEYS.forEach(k => orderedSet.add(k));
-        READONLY_PRIORITY_KEYS.forEach(k => orderedSet.add(k));
-        Object.keys(EXIF_DICTIONARY).forEach(k => orderedSet.add(k));
-
-        loadedFiles.forEach(f => {
-            Object.keys(f.allTags).forEach(k => {
-                if (k === 'PhotographicSensitivity' || k === 'ISOSpeedRatings') return;
-                if (typeof f.allTags[k] !== 'object' || f.allTags[k] instanceof Date) {
-                    orderedSet.add(k);
-                }
-            });
-        });
-
-        activeFieldKeys = Array.from(orderedSet);
-    }
-
-    tableHead.innerHTML = '';
-    const trHead = document.createElement('tr');
-
-    const thFixed = document.createElement('th');
-    thFixed.className = `col-fixed th-fixed-corner sortable-th${currentSort.key === 'file_name' ? ' active-sort' : ''}`;
-    const sortIconName = currentSort.key === 'file_name' ? (currentSort.asc ? '▲' : '▼') : '↕';
-    thFixed.innerHTML = `写真 / ファイル名 (${loadedFiles.length}) <span class="sort-icon">${sortIconName}</span>`;
-    thFixed.onclick = () => sortFilesBy('file_name');
-    trHead.appendChild(thFixed);
-
-    const thOp = document.createElement('th');
-    thOp.style.minWidth = '108px';
-    thOp.style.textAlign = 'center';
-    thOp.textContent = '操作';
-    trHead.appendChild(thOp);
-
-    activeFieldKeys.forEach(key => {
-        const info = EXIF_DICTIONARY[key] || { label: key, hex: '', desc: '', editable: false };
-        const isEditable = !!info.editable;
-        const isSorted = currentSort.key === key;
-        const sortIcon = isSorted ? (currentSort.asc ? '▲' : '▼') : '↕';
-
-        const th = document.createElement('th');
-        th.className = `sortable-th ${isEditable ? 'th-editable' : 'th-readonly'}${isSorted ? ' active-sort' : ''}`;
-        th.innerHTML = `${escapeHtml(info.label)} <span class="sort-icon">${sortIcon}</span>`;
-
-        th.addEventListener('click', () => sortFilesBy(key));
-        th.addEventListener('mouseenter', (e) => showTooltip(e, key));
-        th.addEventListener('mousemove', positionTooltip);
-        th.addEventListener('mouseleave', hideTooltip);
-
-        trHead.appendChild(th);
-    });
-
-    tableHead.appendChild(trHead);
-
-    tableBody.innerHTML = '';
-    let totalEditedCells = 0;
-    const isIOSDevice = isIOS();
-
-    loadedFiles.forEach((item, fileIdx) => {
-        const tr = document.createElement('tr');
-        tr.dataset.fileId = item.id;
-
-        const tdFixed = document.createElement('td');
-        tdFixed.className = 'col-fixed';
-        tdFixed.innerHTML = `
-            <div class="file-cell-content">
-                <img src="${item.thumbUrl || ''}" class="meta-thumb" alt="thumb">
-                <div class="file-meta-info">
-                    <span class="file-name-text" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
-                    <span class="file-sub-text">${formatFileSize(item.file.size)}</span>
-                </div>
-            </div>
-        `;
-        tr.appendChild(tdFixed);
-
-        const tdRowAction = document.createElement('td');
-        tdRowAction.style.textAlign = 'center';
-        tdRowAction.style.whiteSpace = 'nowrap';
-        
-        const dlBtnLabel = isIOSDevice ? '共有' : '⬇ 保存';
-        const dlBtnTitle = isIOSDevice ? 'この写真を共有・写真アプリへ保存' : 'この写真の編集内容を反映してダウンロード';
-
-        tdRowAction.innerHTML = `
-            <div class="row-action-group">
-                <button type="button" class="mini-btn" title="この写真の変更をリセット" onclick="resetFileEdits('${item.id}')">↺</button>
-                <button type="button" class="mini-btn" style="color:var(--danger-color);" title="この写真を除外" onclick="removeFile('${item.id}')">✖</button>
-                <button type="button" class="mini-btn mini-btn-dl" title="${dlBtnTitle}" onclick="downloadSingleFile('${item.id}')">${dlBtnLabel}</button>
-            </div>
-        `;
-        tr.appendChild(tdRowAction);
-
-        activeFieldKeys.forEach((key, colIdx) => {
-            const td = document.createElement('td');
-            const info = EXIF_DICTIONARY[key] || { editable: false };
-            const isEditable = !!info.editable;
-
-            const origVal = item.originalMeta[key] !== undefined ? String(item.originalMeta[key]) : (item.allTags[key] !== undefined ? String(item.allTags[key]) : '');
-            const currVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : origVal;
-            const isEdited = isEditable && (currVal !== origVal);
-
-            if (isEdited) totalEditedCells++;
-
-            td.dataset.fileId = item.id;
-            td.dataset.key = key;
-            td.dataset.colIdx = colIdx;
-            td.dataset.fileIdx = fileIdx;
-
-            if (isEditable) {
-                const isSelected = selectedCellInfo && selectedCellInfo.fileId === item.id && selectedCellInfo.key === key;
-                td.className = `editable-cell${isEdited ? ' is-edited' : ''}${isSelected ? ' is-selected' : ''}`;
-                if (isSelected) selectedCellInfo.el = td;
-
-                td.innerHTML = `
-                    <span class="cell-text">${escapeHtml(currVal || '-')}</span>
-                    <div class="cell-actions">
-                        ${isEdited ? `<button type="button" class="mini-btn" title="元に戻す" onclick="resetCellEdit(event, '${item.id}', '${key}')">↺</button>` : ''}
-                        <button type="button" class="mini-btn" title="全写真にこの値を適用" onclick="applyToAllFiles(event, '${key}', '${escapeHtml(currVal)}')">↓</button>
-                    </div>
-                `;
-
-                td.addEventListener('click', (e) => {
-                    if (e.target.closest('.mini-btn')) return;
-                    selectCell(td, item, key, fileIdx, colIdx);
-                });
-
-                td.addEventListener('dblclick', () => startCellEdit(td, item, key));
-            } else {
-                td.className = 'readonly-cell';
-                td.textContent = currVal || '-';
-            }
-
-            tr.appendChild(td);
-        });
-
-        tableBody.appendChild(tr);
-    });
-
-    editCountBadge.textContent = totalEditedCells > 0 ? `（${totalEditedCells}箇所 編集済み）` : '';
-
-    downloadAllBtn.disabled = (totalEditedCells === 0);
-}
-
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('#table-wrapper') && !e.target.closest('.table-toolbar')) {
-        clearCellSelection();
-    }
-});
-
-function startCellEdit(td, item, key) {
-    if (td.classList.contains('is-editing')) return;
-
-    clearCellSelection();
-    td.classList.add('is-editing');
-    const currVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : '';
-    
-    td.innerHTML = `<input type="text" class="cell-input" value="${escapeHtml(currVal)}">`;
-    const input = td.querySelector('.cell-input');
-    input.focus();
-    input.select();
-
-    const commit = () => {
-        const newVal = input.value.trim();
-        item.currentMeta[key] = newVal;
-        td.classList.remove('is-editing');
-        renderTable();
-        const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
-        if (newTd) selectCell(newTd, item, key, parseInt(newTd.dataset.fileIdx, 10), parseInt(newTd.dataset.colIdx, 10));
-    };
-
-    const cancel = () => {
-        td.classList.remove('is-editing');
-        renderTable();
-        const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
-        if (newTd) selectCell(newTd, item, key, parseInt(newTd.dataset.fileIdx, 10), parseInt(newTd.dataset.colIdx, 10));
-    };
-
-    input.addEventListener('blur', commit);
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') commit();
-        else if (e.key === 'Escape') cancel();
-    });
-}
-
-window.resetCellEdit = function(e, fileId, key) {
-    e.stopPropagation();
-    const item = loadedFiles.find(f => f.id === fileId);
-    if (item && item.originalMeta[key] !== undefined) {
-        item.currentMeta[key] = item.originalMeta[key];
-        renderTable();
-    }
-};
-
-window.resetFileEdits = function(fileId) {
-    const item = loadedFiles.find(f => f.id === fileId);
-    if (item) {
-        item.currentMeta = Object.assign({}, item.originalMeta);
-        renderTable();
-        statusText.textContent = `写真「${item.file.name}」の変更を元に戻しました。`;
-    }
-};
-
-window.removeFile = function(fileId) {
-    const idx = loadedFiles.findIndex(f => f.id === fileId);
-    if (idx !== -1) {
-        loadedFiles.splice(idx, 1);
-        clearCellSelection();
-        renderTable();
-    }
-};
-
-window.applyToAllFiles = function(e, key, val) {
-    e.stopPropagation();
-    const info = EXIF_DICTIONARY[key] || { label: key };
-    if (!confirm(`「${info.label}」の値をすべての写真（計${loadedFiles.length}枚）に一括適用しますか？\n設定値: "${val}"`)) return;
-
-    loadedFiles.forEach(f => {
-        f.currentMeta[key] = val;
-    });
-    renderTable();
-    statusText.textContent = `すべての写真の「${info.label}」に "${val}" を一括適用しました。`;
-};
-
-btnResetAll.addEventListener('click', () => {
-    if (confirm('すべての写真の編集を初期状態に戻しますか？')) {
-        loadedFiles.forEach(f => {
-            f.currentMeta = Object.assign({}, f.originalMeta);
-        });
-        clearCellSelection();
-        renderTable();
-        statusText.textContent = 'すべての編集を初期状態に戻しました。';
-    }
-});
-
-btnClearAll.addEventListener('click', () => {
-    loadedFiles = [];
-    clearCellSelection();
-    renderTable();
-    statusText.textContent = 'すべてのファイルを除外しました。';
-});
-
-// ==========================================
-// 9. Excel風ショートカット（矢印移動・値クリア・コピー・ペースト・Enter編集）
-// ==========================================
-window.addEventListener('keydown', async (e) => {
-    const activeEl = document.activeElement;
-    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-
-    if (isTyping) return;
-    if (!selectedCellInfo) return;
-
-    const { item, key, el, fileIdx, colIdx } = selectedCellInfo;
-    const info = EXIF_DICTIONARY[key] || { label: key };
-
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        if (info.editable && item.currentMeta[key] !== '') {
-            item.currentMeta[key] = '';
-            renderTable();
-            const newTd = document.querySelector(`td[data-file-id="${item.id}"][data-key="${key}"]`);
-            if (newTd) selectCell(newTd, item, key, fileIdx, colIdx);
-            statusText.textContent = `「${info.label}」の値を消去しました。`;
-        }
-        return;
-    }
-
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        e.preventDefault();
-        const copyVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : '';
-        try {
-            await navigator.clipboard.writeText(copyVal);
-            statusText.textContent = `「${info.label}」の値 "${copyVal}" をクリップボードにコピーしました！`;
-        } catch (err) {
-            console.warn('クリップボード書き込み失敗:', err);
-        }
-        return;
-    }
-
-    if (e.key === 'Enter' || e.key === 'F2') {
-        e.preventDefault();
-        startCellEdit(el, item, key);
-        return;
-    }
-
-    if (e.key === 'Escape') {
-        clearCellSelection();
-        return;
-    }
-
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-
-        let targetFileIdx = fileIdx;
-        let targetColIdx = colIdx;
-
-        if (e.key === 'ArrowUp') targetFileIdx--;
-        else if (e.key === 'ArrowDown') targetFileIdx++;
-        else if (e.key === 'ArrowLeft') targetColIdx--;
-        else if (e.key === 'ArrowRight') targetColIdx++;
-
-        if (targetFileIdx < 0 || targetFileIdx >= loadedFiles.length) return;
-        if (targetColIdx < 0 || targetColIdx >= activeFieldKeys.length) return;
-
-        const targetKey = activeFieldKeys[targetColIdx];
-        const targetTd = document.querySelector(`td[data-file-idx="${targetFileIdx}"][data-col-idx="${targetColIdx}"]`);
-
-        if (targetTd && targetTd.classList.contains('editable-cell')) {
-            const targetItem = loadedFiles[targetFileIdx];
-            selectCell(targetTd, targetItem, targetKey, targetFileIdx, targetColIdx);
-            scrollCellIntoViewSmart(targetTd, targetColIdx);
-        }
-        return;
-    }
-});
-
-window.addEventListener('paste', (e) => {
-    const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
-
-    const clipText = (e.clipboardData || window.clipboardData).getData('text');
-    if (!clipText || loadedFiles.length === 0) return;
-
-    const rows = clipText.split(/\r?\n/).filter(r => r.length > 0);
-    if (rows.length === 0) return;
-
-    let startFileIdx = 0;
-    let startColIdx = 0;
-
-    if (selectedCellInfo) {
-        startFileIdx = selectedCellInfo.fileIdx;
-        startColIdx = selectedCellInfo.colIdx;
-    } else {
-        const hoveredCell = document.querySelector('.editable-cell:hover');
-        if (hoveredCell) {
-            startFileIdx = parseInt(hoveredCell.dataset.fileIdx, 10) || 0;
-            startColIdx = parseInt(hoveredCell.dataset.colIdx, 10) || 0;
-        }
-    }
-
-    let appliedCount = 0;
-
-    rows.forEach((rowStr, rOffset) => {
-        const targetFileIdx = startFileIdx + rOffset;
-        if (targetFileIdx >= loadedFiles.length) return;
-
-        const cells = rowStr.split('\t');
-        cells.forEach((val, cOffset) => {
-            const targetColIdx = startColIdx + cOffset;
-            if (targetColIdx >= activeFieldKeys.length) return;
-
-            const key = activeFieldKeys[targetColIdx];
-            const info = EXIF_DICTIONARY[key];
-            if (info && info.editable) {
-                loadedFiles[targetFileIdx].currentMeta[key] = val.trim();
-                appliedCount++;
-            }
-        });
-    });
-
-    if (appliedCount > 0) {
-        renderTable();
-        statusText.textContent = `クリップボードから ${appliedCount} 箇所のセルに値を貼り付けました！`;
-    }
-});
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, function(m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-    });
-}
-
-// ==========================================
-// 10. 保存・ダウンロードパイプライン
-// ==========================================
-window.downloadSingleFile = async function(fileId) {
-    const item = loadedFiles.find(f => f.id === fileId);
-    if (!item) return;
-
-    statusText.textContent = `「${item.file.name}」を保存処理中...`;
-
-    const nameMode = filenameModeSelect.value;
-    const isCompress = compressChk.checked;
-    const quality = parseFloat(qualitySlider.value) / 100;
-
-    try {
-        const res = await exportSingleFile(item, { nameMode, isCompress, quality });
-
-        if (isIOS()) {
-            const fileObj = new File([res.blob], res.filename, { type: res.mimeType });
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
-                await navigator.share({
-                    files: [fileObj],
-                    title: res.filename
-                });
-                statusText.textContent = `「${res.filename}」の共有メニューを開きました。`;
-            } else {
-                const a = document.createElement('a');
-                a.href = res.dataUrl;
-                a.download = res.filename;
-                a.click();
-                statusText.textContent = `「${res.filename}」を保存しました。`;
-            }
-        } else {
-            const a = document.createElement('a');
-            a.href = res.dataUrl;
-            a.download = res.filename;
-            a.click();
-            statusText.textContent = `「${res.filename}」をダウンロードしました！`;
-        }
-    } catch (err) {
-        console.error(`[${item.file.name}] 保存エラー:`, err);
-        statusText.textContent = `「${item.file.name}」の保存中にエラーが発生しました。`;
-    }
-};
-
-downloadAllBtn.addEventListener('click', async () => {
-    if (loadedFiles.length === 0) return;
-
-    downloadAllBtn.disabled = true;
-    const oldText = downloadAllBtn.textContent;
-    downloadAllBtn.textContent = 'ダウンロード処理中...';
-
-    const nameMode = filenameModeSelect.value;
-    const isCompress = compressChk.checked;
-    const quality = parseFloat(qualitySlider.value) / 100;
-
-    for (let i = 0; i < loadedFiles.length; i++) {
-        statusText.textContent = `ダウンロード中... (${i + 1} / ${loadedFiles.length}枚)`;
-        const item = loadedFiles[i];
-
-        try {
-            const res = await exportSingleFile(item, { nameMode, isCompress, quality });
-            const a = document.createElement('a');
-            a.href = res.dataUrl;
-            a.download = res.filename;
-            a.click();
-            await new Promise(r => setTimeout(r, 400));
-        } catch (err) {
-            console.error(`[${item.file.name}] 一括DLエラー:`, err);
-        }
-    }
-
-    statusText.textContent = `全 ${loadedFiles.length} 枚のダウンロードが完了しました！`;
-    downloadAllBtn.textContent = oldText;
-    const editedCount = document.querySelectorAll('.editable-cell.is-edited').length;
-    downloadAllBtn.disabled = (editedCount === 0);
-});
-
-async function exportSingleFile(item, opts) {
-    const outFilename = getOutputFilename(item.file.name, opts.nameMode);
-    let outputBlob = null;
-
-    let exifDict = { "0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": null };
-    try {
-        if (typeof piexif !== 'undefined') {
-            exifDict = piexif.load(item.rawDataUrl);
-        }
-    } catch (e) {
-        console.warn('Exif初期読み込みエラー、新規作成します:', e);
-    }
-
-    applyMetaToExifDict(exifDict, item.currentMeta);
-    const exifBytes = piexif.dump(exifDict);
-
-    if (!opts.isCompress) {
-        const updatedDataUrl = piexif.insert(exifBytes, item.rawDataUrl);
-        outputBlob = dataURLtoBlob(updatedDataUrl);
-    } else {
-        const compressedDataUrl = await recompressViaCanvas(item.file, opts.quality);
-        const updatedDataUrl = piexif.insert(exifBytes, compressedDataUrl);
-        outputBlob = dataURLtoBlob(updatedDataUrl);
-    }
-
-    const dataUrl = URL.createObjectURL(outputBlob);
-    return {
-        filename: outFilename,
-        mimeType: 'image/jpeg',
-        blob: outputBlob,
-        dataUrl: dataUrl,
-        thumbUrl: item.thumbUrl
-    };
-}
-
-function applyMetaToExifDict(dict, meta) {
-    if (!dict["0th"]) dict["0th"] = {};
-    if (!dict["Exif"]) dict["Exif"] = {};
-    if (!dict["GPS"]) dict["GPS"] = {};
-
-    if (meta.Make !== undefined) dict["0th"][piexif.ImageIFD.Make] = meta.Make;
-    if (meta.Model !== undefined) dict["0th"][piexif.ImageIFD.Model] = meta.Model;
-    if (meta.Artist !== undefined) dict["0th"][piexif.ImageIFD.Artist] = meta.Artist;
-    if (meta.Copyright !== undefined) dict["0th"][piexif.ImageIFD.Copyright] = meta.Copyright;
-    if (meta.Software !== undefined) dict["0th"][piexif.ImageIFD.Software] = meta.Software;
-    if (meta.ImageDescription !== undefined) dict["0th"][piexif.ImageIFD.ImageDescription] = meta.ImageDescription;
-    if (meta.LensModel !== undefined) dict["Exif"][piexif.ExifIFD.LensModel] = meta.LensModel;
-    if (meta.LensMake !== undefined) dict["Exif"][piexif.ExifIFD.LensMake] = meta.LensMake;
-    if (meta.UserComment !== undefined) dict["Exif"][piexif.ExifIFD.UserComment] = meta.UserComment;
-    if (meta.CameraOwnerName !== undefined) dict["Exif"][piexif.ExifIFD.CameraOwnerName] = meta.CameraOwnerName;
-
-    if (meta.DateTimeOriginal) {
-        dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = meta.DateTimeOriginal;
-        dict["0th"][piexif.ImageIFD.DateTime] = meta.DateTimeOriginal;
-    }
-
-    const toRational = (val) => {
-        const num = parseFloat(val);
-        if (isNaN(num)) return null;
-        const d = 1000;
-        return [Math.round(num * d), d];
-    };
-
-    if (meta.FocalLength) {
-        const r = toRational(meta.FocalLength);
-        if (r) dict["Exif"][piexif.ExifIFD.FocalLength] = r;
-    }
-
-    if (meta.FNumber) {
-        const r = toRational(meta.FNumber);
-        if (r) dict["Exif"][piexif.ExifIFD.FNumber] = r;
-    }
-
-    if (meta.ExposureTime) {
-        const s = String(meta.ExposureTime).trim();
-        const frac = s.match(/1\s*\/\s*(\d+(?:\.\d+)?)/);
-        if (frac) {
-            dict["Exif"][piexif.ExifIFD.ExposureTime] = [1, Math.round(parseFloat(frac[1]))];
-        } else {
-            const sec = parseFloat(s);
-            if (!isNaN(sec)) {
-                dict["Exif"][piexif.ExifIFD.ExposureTime] = toRational(sec);
-            }
-        }
-    }
-
-    if (meta.ISO) {
-        const isoNum = parseInt(meta.ISO, 10);
-        if (!isNaN(isoNum)) dict["Exif"][piexif.ExifIFD.ISOSpeedRatings] = isoNum;
-    }
-
-    if (meta.GPSLatitude !== undefined && meta.GPSLatitude !== '' && meta.GPSLongitude !== undefined && meta.GPSLongitude !== '') {
-        const lat = parseFloat(meta.GPSLatitude);
-        const lng = parseFloat(meta.GPSLongitude);
-
-        if (!isNaN(lat) && !isNaN(lng)) {
-            const degToDms = (deg) => {
-                const absDeg = Math.abs(deg);
-                const d = Math.floor(absDeg);
-                const mFloat = (absDeg - d) * 60;
-                const m = Math.floor(mFloat);
-                const sFloat = (mFloat - m) * 60;
-                return [[d, 1], [m, 1], [Math.round(sFloat * 100), 100]];
-            };
-
-            dict["GPS"][piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? "N" : "S";
-            dict["GPS"][piexif.GPSIFD.GPSLatitude] = degToDms(lat);
-            dict["GPS"][piexif.GPSIFD.GPSLongitudeRef] = lng >= 0 ? "E" : "W";
-            dict["GPS"][piexif.GPSIFD.GPSLongitude] = degToDms(lng);
-            dict["GPS"][piexif.GPSIFD.GPSVersionID] = [2, 2, 0, 0];
-        }
-    }
-}
-
-function recompressViaCanvas(file, quality) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            URL.revokeObjectURL(url);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('画像ロードエラー'));
-        };
-        img.src = url;
-    });
-}
-
-function getOutputFilename(originalName, mode) {
-    if (mode === 'keep') return originalName;
-    if (mode === 'suffix') {
-        const dotIdx = originalName.lastIndexOf('.');
-        if (dotIdx === -1) return `${originalName}_edit`;
-        return `${originalName.substring(0, dotIdx)}_edit${originalName.substring(dotIdx)}`;
-    }
-    return `edit_${originalName}`;
-}
-
-function dataURLtoBlob(dataurl) {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
-}
-</script>
+<!-- ツール固有スクリプト（外部JSファイル） -->
+<script src="js/exif-viewedit.js"></script>
 
 </body>
 </html>
