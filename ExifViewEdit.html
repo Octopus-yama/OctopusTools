@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus EXIF View & Edit｜Octopus Tools</title>
+    <!-- ファビコン指定 -->
+    <link rel="icon" href="img/icon_view_edit.ico" type="image/x-icon">
+    <meta name="description" content="ブラウザ内で安全に写真のExifメタデータをExcel風に閲覧・比較・編集できるWebツール。" />
+    <!-- 依存ライブラリ（同階層から読み込み） -->
+    <script src="full.umd.js"></script>
+    <script src="piexif.js"></script>
+    <!-- 共通管理スクリプト -->
+    <script src="common.js"></script>
+
+    <style>
+        :root {
+            /* メインカラー：アース黄緑 (Sage / Olive Green) */
+            --primary: #607d3b;
+            --primary-hover: #4f682f;
+            --primary-light: #f2f6ec;
+            --primary-border: #c4d7b3;
+            --primary-glow: rgba(96, 125, 59, 0.2);
+
+            /* アクセントカラー：濃い紫 (Deep Plum / Purple) */
+            --accent: #542366;
+            --accent-hover: #411a50;
+            --accent-light: #f7effa;
+            --accent-border: #dbc3e3;
+
+            /* ニュートラル・サーフェス */
+            --bg-color: #f7f8f5;
+            --card-bg: #ffffff;
+            --card-bg-sub: #f3f5f0;
+            --text-color: #2b3324;
+            --text-muted: #64705a;
+            --border-color: #e0e6d8;
+            --border-hover: #b8c8a8;
+            
+            --danger-color: #c94a4a;
+            --danger-hover: #ab3737;
+            --edited-bg: #fffbeb;
+            --edited-border: #f59e0b;
+            --edited-text: #b45309;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(43, 51, 36, 0.05);
+            --shadow-md: 0 8px 24px rgba(43, 51, 36, 0.08);
+            --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #86ad58;
+            --primary-hover: #9bc36c;
+            --primary-light: #252e1f;
+            --primary-border: #3d4a32;
+            --primary-glow: rgba(134, 173, 88, 0.25);
+
+            --accent: #bd79d9;
+            --accent-hover: #cb90e3;
+            --accent-light: #321d38;
+            --accent-border: #573361;
+
+            --bg-color: #1e221b;
+            --card-bg: #282d24;
+            --card-bg-sub: #21251e;
+            --text-color: #ecf0e6;
+            --text-muted: #a3b098;
+            --border-color: #373f32;
+            --border-hover: #4d5746;
+
+            --edited-bg: #3d3318;
+            --edited-border: #d97706;
+            --edited-text: #fbbf24;
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            padding: 32px 16px; 
+            min-height: 100vh; 
+            transition: background-color 0.3s, color 0.3s; 
+            line-height: 1.6; 
+        }
+        
+        .container { 
+            max-width: 840px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            padding: 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-md); 
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .container.wide-mode {
+            max-width: 2000px;
+            width: 96vw;
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+            border-bottom: 2px solid var(--border-color); 
+            padding-bottom: 16px; 
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            letter-spacing: -0.01em; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            display: block;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .version { 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: var(--primary); 
+            background: var(--primary-light); 
+            border: 1px solid var(--primary-border); 
+            padding: 2px 10px; 
+            border-radius: 20px; 
+        }
+
+        .wide-toggle-btn {
+            display: none;
+            cursor: pointer;
+            background: var(--card-bg-sub);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .wide-toggle-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        @media (min-width: 860px) {
+            .wide-toggle-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+        }
+
+        .theme-toggle { 
+            cursor: pointer; 
+            background: var(--card-bg-sub); 
+            color: var(--text-color); 
+            border: 1px solid var(--border-color); 
+            padding: 6px 12px; 
+            border-radius: var(--radius-sm); 
+            font-size: 14px; 
+            transition: var(--transition); 
+        }
+        .theme-toggle:hover { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+        }
+
+        /* 共通グローバルナビゲーション */
+        .global-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .global-nav::-webkit-scrollbar {
+            display: none;
+        }
+        .nav-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            text-decoration: none;
+            transition: var(--transition);
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .nav-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+            pointer-events: none;
+        }
+
+        /* ドロップエリア */
+        .drop-area { 
+            border: 2px dashed var(--primary-border); 
+            border-radius: var(--radius-md); 
+            padding: 34px 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            background: var(--primary-light); 
+            margin-bottom: 24px; 
+            transition: var(--transition); 
+        }
+        .drop-area:hover, .drop-area.drag-over { 
+            border-color: var(--primary); 
+            background: var(--card-bg-sub); 
+            transform: translateY(-2px); 
+            box-shadow: var(--shadow-sm); 
+        }
+        .drop-area p { 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+        }
+        .drop-area span { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            display: block; 
+            margin-top: 6px; 
+        }
+
+        /* ツールバー・モード切替 */
+        .table-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .mode-badge-btn {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .mode-badge-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+
+        /* 文字サイズ切り替えピッカー */
+        .font-size-picker {
+            display: inline-flex;
+            align-items: center;
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 2px;
+            gap: 2px;
+        }
+        .font-size-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .font-size-btn:hover {
+            color: var(--text-color);
+        }
+        .font-size-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            font-weight: 700;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sub-btn {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sub-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary-border);
+            background: var(--primary-light);
+        }
+        .sub-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .sub-btn-danger:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+            background: rgba(201, 74, 74, 0.08);
+        }
+
+        /* Excel風テーブルラッパー（縦リサイズ可・ドラッグ受付対応） */
+        .table-wrapper {
+            position: relative;
+            height: 480px;
+            min-height: 240px;
+            max-height: 92vh;
+            overflow: auto;
+            resize: vertical;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--card-bg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            -webkit-overflow-scrolling: touch;
+            transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
+        }
+        .table-wrapper.drag-over {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px var(--primary), var(--shadow-md) !important;
+            background: var(--primary-light) !important;
+        }
+        .table-wrapper.is-expanded {
+            height: 82vh !important;
+            max-height: 82vh !important;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .excel-table th, .excel-table td {
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        /* ---------------------------------
+           文字サイズ別スタイル（標準 / 小 / 極小）
+        ------------------------------------ */
+        .excel-table.font-size-normal {
+            font-size: 12.5px;
+        }
+        .excel-table.font-size-normal th, .excel-table.font-size-normal td {
+            padding: 8px 12px;
+        }
+        .excel-table.font-size-normal .meta-thumb {
+            width: 38px;
+            height: 38px;
+        }
+        .excel-table.font-size-normal .col-fixed {
+            min-width: 190px;
+            max-width: 240px;
+        }
+
+        .excel-table.font-size-small {
+            font-size: 11px;
+        }
+        .excel-table.font-size-small th, .excel-table.font-size-small td {
+            padding: 5px 8px;
+        }
+        .excel-table.font-size-small .meta-thumb {
+            width: 28px;
+            height: 28px;
+        }
+        .excel-table.font-size-small .col-fixed {
+            min-width: 160px;
+            max-width: 200px;
+        }
+        .excel-table.font-size-small .file-name-text {
+            font-size: 11.5px;
+        }
+        .excel-table.font-size-small .file-sub-text {
+            font-size: 10px;
+        }
+
+        .excel-table.font-size-mini {
+            font-size: 10px;
+        }
+        .excel-table.font-size-mini th, .excel-table.font-size-mini td {
+            padding: 3px 6px;
+        }
+        .excel-table.font-size-mini .meta-thumb {
+            width: 20px;
+            height: 20px;
+        }
+        .excel-table.font-size-mini .col-fixed {
+            min-width: 130px;
+            max-width: 170px;
+        }
+        .excel-table.font-size-mini .file-name-text {
+            font-size: 10px;
+        }
+        .excel-table.font-size-mini .file-sub-text {
+            font-size: 9px;
+        }
+        .excel-table.font-size-mini .mini-btn {
+            font-size: 9px;
+            padding: 1px 3px;
+        }
+        
+        /* 固定ヘッダー */
+        .excel-table thead th {
+            position: sticky;
+            top: 0;
+            background: var(--card-bg-sub);
+            color: var(--text-muted);
+            font-weight: 600;
+            z-index: 5;
+            user-select: none;
+            border-bottom: 2px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        .excel-table thead th.th-fixed-corner {
+            left: 0;
+            z-index: 10;
+        }
+
+        /* ソート対応ヘッダースタイル */
+        .sortable-th {
+            cursor: pointer;
+        }
+        .sortable-th:hover {
+            background: var(--primary-light) !important;
+        }
+        .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 11px;
+            color: var(--text-muted);
+            vertical-align: middle;
+        }
+        .sortable-th.active-sort {
+            color: var(--primary) !important;
+        }
+        .sortable-th.active-sort .sort-icon {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* 編集可能/不可の視覚的区別 */
+        .th-editable {
+            color: var(--primary) !important;
+            font-weight: 700 !important;
+            border-top: 2px solid var(--primary);
+            background: rgba(96, 125, 59, 0.04);
+        }
+        .th-editable::before {
+            content: "✏️ ";
+            font-size: 10px;
+        }
+        .th-readonly {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        
+        /* 固定列（左端：ファイル情報） */
+        .excel-table td.col-fixed, .excel-table th.col-fixed {
+            position: sticky;
+            left: 0;
+            background: var(--card-bg);
+            z-index: 4;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.04);
+        }
+        .excel-table thead th.col-fixed {
+            background: var(--card-bg-sub);
+            z-index: 6;
+        }
+        .excel-table tr:hover td.col-fixed {
+            background: var(--primary-light);
+        }
+
+        .file-cell-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+        .meta-thumb {
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+            background: var(--card-bg-sub);
+        }
+        .file-meta-info {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .file-name-text {
+            font-weight: 700;
+            color: var(--text-color);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-sub-text {
+            color: var(--text-muted);
+        }
+
+        /* 編集可能セル・編集済みスタイル */
+        .editable-cell {
+            cursor: pointer;
+            position: relative;
+            min-width: 90px;
+            transition: background 0.15s;
+        }
+        .editable-cell:hover {
+            background: rgba(96, 125, 59, 0.08);
+            outline: 1px dashed var(--primary);
+        }
+        .editable-cell.is-edited {
+            background: var(--edited-bg) !important;
+            color: var(--edited-text) !important;
+            font-weight: 700;
+        }
+        .editable-cell.is-editing {
+            padding: 0 !important;
+            background: var(--card-bg) !important;
+        }
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            padding: 6px 10px;
+            border: 2px solid var(--primary);
+            font-size: inherit;
+            background: var(--card-bg);
+            color: var(--text-color);
+            outline: none;
+            font-family: inherit;
+        }
+        .cell-actions {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            gap: 4px;
+        }
+        .editable-cell:hover .cell-actions {
+            display: flex;
+        }
+        .mini-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        .mini-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .mini-btn-dl {
+            background: var(--primary);
+            color: #ffffff !important;
+            border-color: var(--primary);
+            font-weight: 700;
+        }
+        .mini-btn-dl:hover {
+            background: var(--primary-hover) !important;
+            color: #ffffff !important;
+        }
+
+        .readonly-cell {
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.015);
+            cursor: default;
+        }
+
+        /* フローティング吹き出しツールチップ */
+        #meta-tooltip {
+            position: fixed;
+            display: none;
+            z-index: 10000;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-color);
+            max-width: 280px;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        #meta-tooltip .tt-title {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+        #meta-tooltip .tt-tag {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        #meta-tooltip .tt-desc {
+            font-size: 12px;
+            color: var(--text-color);
+            line-height: 1.45;
+            margin-bottom: 6px;
+        }
+        #meta-tooltip .tt-status {
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+        #meta-tooltip .tt-status.editable {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+        }
+        #meta-tooltip .tt-status.readonly {
+            background: var(--card-bg-sub);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        /* アコーディオン */
+        .accordion { 
+            margin-bottom: 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-md); 
+            overflow: hidden; 
+            background: var(--card-bg); 
+            transition: var(--transition); 
+        }
+        .accordion:hover { 
+            border-color: var(--border-hover); 
+        }
+        .accordion-header { 
+            background: var(--card-bg-sub); 
+            padding: 14px 18px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 14px; 
+            color: var(--text-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            user-select: none; 
+            transition: var(--transition); 
+        }
+        .accordion-header:hover { 
+            background: var(--primary-light); 
+            color: var(--primary); 
+        }
+        .accordion-header span { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+            transition: var(--transition); 
+        }
+        .accordion-content { 
+            padding: 20px; 
+            display: none; 
+            background: var(--card-bg); 
+            border-top: 1px solid var(--border-color); 
+        }
+        .accordion-content.open { 
+            display: block; 
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        select, input[type="range"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: var(--card-bg);
+        }
+
+        /* 一括ダウンロードボタン（メインアクション） */
+        .main-btn { 
+            background: var(--accent); 
+            color: #ffffff; 
+            border: none; 
+            padding: 15px 24px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            border-radius: var(--radius-md); 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 20px; 
+            transition: var(--transition); 
+            box-shadow: 0 4px 14px rgba(84, 35, 102, 0.25); 
+            letter-spacing: 0.02em; 
+        }
+        .main-btn:hover:not(:disabled) { 
+            background: var(--accent-hover); 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 20px rgba(84, 35, 102, 0.35); 
+        }
+        .main-btn:disabled { 
+            background: #999999; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+        }
+
+        .explanation { 
+            max-width: 840px; 
+            margin: 28px auto 0; 
+            background: var(--card-bg); 
+            padding: 28px 32px; 
+            border-radius: var(--radius-lg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: var(--shadow-sm); 
+            line-height: 1.7; 
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .container.wide-mode ~ .explanation { 
+            max-width: 2000px; 
+        }
+
+        .usage-section h3 { 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            border-left: 4px solid var(--primary); 
+            padding-left: 10px; 
+            margin: 22px 0 10px 0; 
+            letter-spacing: 0.01em; 
+        }
+        .usage-section h3:first-child { 
+            margin-top: 0; 
+        }
+        .usage-section p { 
+            font-size: 13.5px; 
+            color: var(--text-muted); 
+            margin: 0 0 10px 0; 
+            padding-left: 1.2em; 
+            text-indent: -1.2em; 
+        } 
+        .usage-section ul { 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            margin-top: 6px; 
+            padding-left: 2.2em; 
+            line-height: 1.85; 
+        }
+        .usage-section a { 
+            color: var(--primary); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: var(--transition); 
+        }
+        .usage-section a:hover { 
+            color: var(--accent); 
+            text-decoration: underline; 
+        }
+
+        .footer { 
+            text-align: center; 
+            padding: 28px 10px 36px; 
+            color: var(--text-muted); 
+            font-size: 12px; 
+        }
+        .copyright-name { 
+            font-weight: 700; 
+            color: var(--text-color); 
+        }
+    </style>
+</head>
+<body>
+
+<!-- マウスホバー・長押し用フローティング吹き出し -->
+<div id="meta-tooltip">
+    <div class="tt-title" id="tt-title"></div>
+    <div class="tt-tag" id="tt-tag"></div>
+    <div class="tt-desc" id="tt-desc"></div>
+    <span class="tt-status" id="tt-status"></span>
+</div>
+
+<div class="container" id="main-container">
+    <div class="header">
+        <h1>
+            <img src="img/icon_view_edit.png" alt="アプリのアイコン" class="header-icon" onerror="this.parentElement.innerHTML='📝 Octopus EXIF View & Edit';">
+            Octopus EXIF View & Edit
+        </h1>
+        <div class="header-controls">
+            <span class="version" id="version-display"></span>
+            <button class="wide-toggle-btn" id="wide-toggle-btn" title="画面の幅を最大2000pxに拡大します">⤢ ワイド表示</button>
+            <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
+        </div>
+    </div>
+
+    <!-- 共通ナビゲーション（common.jsから自動描画） -->
+    <nav id="global-nav"></nav>
+
+    <!-- ドロップエリア -->
+    <div class="drop-area" id="drop-area">
+        <p>ここをタップするか、JPEG画像ファイルをドラッグ＆ドロップ（複数対応）</p>
+        <span id="limit-notice">JPEG (.jpg / .jpeg) 対応（PC: 最大50枚 / スマホ: 最大10枚）</span>
+        <input type="file" id="file-input" accept="image/jpeg" multiple style="display: none;">
+    </div>
+
+    <!-- メタデータ編集ワークスペース -->
+    <div id="table-workspace" style="display: none;">
+        <div class="table-toolbar">
+            <div class="toolbar-group">
+                <button type="button" class="mode-badge-btn active" id="btn-mode-simple">簡易モード</button>
+                <button type="button" class="mode-badge-btn" id="btn-mode-detail">詳細モード (全メタデータ)</button>
+                
+                <!-- 文字サイズ変更ピッカー（標準/小/極小） -->
+                <div class="font-size-picker" title="表内の文字サイズと行の高さを切り替えます">
+                    <span style="font-size: 11px; color: var(--text-muted); padding-left: 4px;">文字:</span>
+                    <button type="button" class="font-size-btn active" data-size="normal">標準</button>
+                    <button type="button" class="font-size-btn" data-size="small">小</button>
+                    <button type="button" class="font-size-btn" data-size="mini">極小</button>
+                </div>
+
+                <span id="edit-count-badge" style="font-size: 12px; font-weight: 700; color: var(--edited-text); margin-left: 4px;"></span>
+            </div>
+
+            <div class="toolbar-group">
+                <!-- 縦サイズ画面フィット展開ボタン -->
+                <button type="button" class="sub-btn" id="btn-expand-height" title="表の縦幅を画面いっぱいに広げます">⤡ 縦を広げる</button>
+                <button type="button" class="sub-btn" id="btn-reset-all-edits" title="すべての写真の編集内容を初期状態に戻します">↺ 全編集をリセット</button>
+                <button type="button" class="sub-btn sub-btn-danger" id="btn-clear-all" title="読み込んだ写真をすべて除外します">全ファイルを除外</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper" id="table-wrapper">
+            <table class="excel-table font-size-normal" id="main-excel-table">
+                <thead id="table-head">
+                    <!-- JSで動的生成 -->
+                </thead>
+                <tbody id="table-body">
+                    <!-- JSで動的生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 出力・保存設定アコーディオン -->
+    <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('content-output-settings', this)">
+            保存・ファイル名設定 <span>▼</span>
+        </div>
+        <div class="accordion-content open" id="content-output-settings">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>ファイル名の処理方式</label>
+                    <select id="filename-mode">
+                        <option value="prefix" selected>接頭辞をつける（例: edit_xxx.jpg）</option>
+                        <option value="suffix">接尾辞をつける（例: xxx_edit.jpg）</option>
+                        <option value="keep">元ファイル名のまま（上書き）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="compress-chk" style="width: 16px; height: 16px; accent-color: var(--primary);">
+                        <span>JPEG再圧縮を実行する (容量削減)</span>
+                    </label>
+                    <div id="quality-slider-container" style="display: none; margin-top: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                            <span>JPEG品質</span>
+                            <span id="quality-val" style="font-weight: 700; color: var(--primary);">92%</span>
+                        </div>
+                        <input type="range" id="quality-slider" min="50" max="100" step="1" value="92">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px;">
+                            ※ チェックを外すと【画質劣化ゼロ（バイナリ直接編集）】で超高速保存されます。
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- アクションボタン（PC環境用の一括ダウンロードボタン） -->
+    <button id="download-all-btn" class="main-btn" disabled>一括ダウンロードする</button>
+    <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
+</div>
+
+<!-- 説明セクション -->
+<div class="explanation">
+    <div class="usage-section">
+        <h3> 本ツールについて</h3>
+        <p>・画像の読み込み、Exifメタデータの解析、バイナリ編集や再保存などのすべての処理はブラウザ内（ローカル環境）で完結します。<br>写真や画像データがサーバーへ送信されることは一切ありません。</p>
+        <p>・標準モードでは画像本体の再圧縮を行わずにExifメタデータ領域のみを直接書き換えるため、<strong>画質の劣化はゼロ（100%維持）</strong>です。</p>
+
+        <h3> 使い方</h3>
+        <p>・枠内または<strong>表示されたExif表の上</strong>にJPEG写真をドラッグ＆ドロップして読み込みます（PCは最大50枚、スマホは最大10枚まで）。</p>
+        <p>・各行の「操作」列にある<strong>「⬇ 保存（iOSは 共有）」</strong>ボタンを押すと、その写真のExif変更内容を反映して個別保存できます。</p>
+        <p>・PC環境では下部の「一括ダウンロードする」ボタンから、編集後の全写真をまとめてダウンロードできます（iOS環境は各行のボタンから保存してください）。</p>
+        <p>・PC環境では、表の右下をマウスでドラッグして<strong>縦の表示サイズを自由に変更</strong>できます。上部の「⤡ 縦を広げる」ボタンで一撃で画面いっぱいに拡大も可能です。</p>
+        <p>・「文字：標準・小・極小」ボタンを押すと、文字サイズと行間をコンパクトに圧縮し、一覧性を高めて一度に多くの写真を俯瞰できます。</p>
+        <p>・表の左側に<strong>編集可能な主要項目（緑色の太字）</strong>が優先して並びます。各セルをダブルクリック（またはタップ）すると直接値を編集できます。</p>
+        <p>・各項目名をクリックすると<strong>昇順・降順で並び替え</strong>が可能です。項目名にマウスを合わせると、詳細な説明が吹き出しで表示されます。</p>
+        <p>・編集したセルは黄色くハイライトされます。ホバー時の「↺」で元に戻したり、「↓」でその値を全写真に一括反映できます。</p>
+        <p>・外部のExcel等からコピーした複数セルのテキスト（タブ区切り・改行区切り）を貼り付けて一括入力することも可能です。</p>
+
+        <h3> ライセンスについて</h3>
+        <p>・本ツールでは、オープンソースのライブラリを利用しています。著作権およびライセンスは各権利者に帰属します。</p>
+        <ul>
+            <li><a href="https://github.com/hMatoba/piexifjs" target="_blank" rel="noopener">piexifjs</a> (MIT License)</li>
+            <li><a href="https://github.com/MikeKovarik/exifr" target="_blank" rel="noopener">exifr</a> (MIT License)</li>
+        </ul>
+    </div>
+</div>
+
+<footer class="footer usage-section">
+    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>
+     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
+</footer>
+
+<script>
+// ==========================================
+// 1. 定数定義・システム環境判定
+// ==========================================
+const MAX_FILES_PC = 50;
+const MAX_FILES_MOBILE = 10;
+
+const isIOS = () => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipod/.test(ua)) return true;
+    if (/ipad/.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+    return false;
+};
+
+const isMobileDevice = () => {
+    return isIOS() || /android|mobile/.test(navigator.userAgent.toLowerCase());
+};
+
+const currentLimit = isMobileDevice() ? MAX_FILES_MOBILE : MAX_FILES_PC;
+
+// テーマ切り替え
+const themeBtn = document.getElementById('theme-btn');
+let isDark = localStorage.getItem('theme') === 'dark';
+const applyTheme = () => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    themeBtn.textContent = isDark ? '☀️' : '🌙';
+};
+applyTheme();
+themeBtn.addEventListener('click', () => {
+    isDark = !isDark;
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    applyTheme();
+});
+
+// PCワイド表示切り替え
+const mainContainer = document.getElementById('main-container');
+const wideToggleBtn = document.getElementById('wide-toggle-btn');
+let isWideMode = localStorage.getItem('viewedit_wide_mode') === 'true';
+const applyWideMode = () => {
+    if (isWideMode) {
+        mainContainer.classList.add('wide-mode');
+        wideToggleBtn.textContent = '⤡ 標準幅に戻す';
+    } else {
+        mainContainer.classList.remove('wide-mode');
+        wideToggleBtn.textContent = '⤢ ワイド表示';
+    }
+};
+applyWideMode();
+wideToggleBtn.addEventListener('click', () => {
+    isWideMode = !isWideMode;
+    localStorage.setItem('viewedit_wide_mode', isWideMode ? 'true' : 'false');
+    applyWideMode();
+});
+
+// アコーディオン開閉
+window.toggleAccordion = function(contentId, headerEl) {
+    const content = document.getElementById(contentId);
+    content.classList.toggle('open');
+    const span = headerEl.querySelector('span');
+    span.textContent = content.classList.contains('open') ? '▲' : '▼';
+};
+
+// ==========================================
+// 2. EXIF公式仕様準拠 タグ辞書マスタ
+// ==========================================
+const EXIF_DICTIONARY = {
+    // 編集可能項目（左側に優先配置されるグループ）
+    Make: { label: 'カメラメーカー', hex: '0x010F', desc: 'カメラの製造メーカー名', ifd: '0th', editable: true, type: 'text' },
+    Model: { label: 'カメラ機種名', hex: '0x0110', desc: 'カメラの機種名・型番', ifd: '0th', editable: true, type: 'text' },
+    LensModel: { label: 'レンズモデル名', hex: '0xA434', desc: '装着レンズの商品名・型式', ifd: 'Exif', editable: true, type: 'text' },
+    FocalLength: { label: 'レンズ焦点距離 (mm)', hex: '0x920A', desc: 'レンズの実焦点距離（mm）', ifd: 'Exif', editable: true, type: 'number' },
+    FNumber: { label: '絞り値 (F値)', hex: '0x829D', desc: '撮影時の絞り数値', ifd: 'Exif', editable: true, type: 'number' },
+    ExposureTime: { label: 'シャッター速度', hex: '0x829A', desc: '露出時間（秒）', ifd: 'Exif', editable: true, type: 'text' },
+    ISO: { label: 'ISO感度', hex: '0x8827', desc: '撮影時のISO感度（PhotographicSensitivity）', ifd: 'Exif', editable: true, type: 'number' },
+    DateTimeOriginal: { label: '原画像生成日時', hex: '0x9003', desc: 'シャッターを切った撮影日時', ifd: 'Exif', editable: true, type: 'text' },
+    Artist: { label: '作成者名', hex: '0x013B', desc: '撮影者または作成者名', ifd: '0th', editable: true, type: 'text' },
+    Copyright: { label: '著作権者名', hex: '0x8298', desc: '写真の著作権者情報', ifd: '0th', editable: true, type: 'text' },
+    GPSLatitude: { label: '緯度 (10進)', hex: '0x0002', desc: '撮影地点の緯度数値', ifd: 'GPS', editable: true, type: 'number' },
+    GPSLongitude: { label: '経度 (10進)', hex: '0x0004', desc: '撮影地点の経度数値', ifd: 'GPS', editable: true, type: 'number' },
+    ImageDescription: { label: '画像タイトル', hex: '0x010E', desc: '画像のタイトルや説明', ifd: '0th', editable: true, type: 'text' },
+    Software: { label: '使用ソフトウェア名', hex: '0x0131', desc: '処理ソフトやファームウェア', ifd: '0th', editable: true, type: 'text' },
+    UserComment: { label: 'ユーザコメント', hex: '0x9286', desc: '自由記述コメント欄', ifd: 'Exif', editable: true, type: 'text' },
+    LensMake: { label: 'レンズ製造者', hex: '0xA433', desc: '装着レンズのメーカー名', ifd: 'Exif', editable: true, type: 'text' },
+    CameraOwnerName: { label: 'カメラ所有者名', hex: '0xA430', desc: '機材のオーナー氏名', ifd: 'Exif', editable: true, type: 'text' },
+
+    // 閲覧のみ項目（右側に続く主要・技術情報グループ）
+    FocalLengthIn35mmFormat: { label: '35mm換算焦点距離', hex: '0xA405', desc: 'ライカ判換算の画角値（mm）', ifd: 'Exif', editable: false },
+    ExposureProgram: { label: '露出プログラム', hex: '0x8822', desc: '絞り優先やマニュアル等の露出制御', ifd: 'Exif', editable: false },
+    MeteringMode: { label: '測光方式', hex: '0x9207', desc: '評価・中央重点・スポット等', ifd: 'Exif', editable: false },
+    LightSource: { label: '光源種別', hex: '0x9208', desc: '撮影環境の光源種別', ifd: 'Exif', editable: false },
+    Flash: { label: 'フラッシュ設定', hex: '0x9209', desc: '発光の有無や発光モード', ifd: 'Exif', editable: false },
+    WhiteBalance: { label: 'ホワイトバランス', hex: '0xA403', desc: 'オートまたはマニュアル', ifd: 'Exif', editable: false },
+    ExposureMode: { label: '露出モード', hex: '0xA402', desc: '自動露出か手動か', ifd: 'Exif', editable: false },
+    ExposureBiasValue: { label: '露出補正値', hex: '0x9204', desc: '露出補正のEV値', ifd: 'Exif', editable: false },
+    ColorSpace: { label: '色空間情報', hex: '0xA001', desc: 'sRGBまたはAdobeRGB', ifd: 'Exif', editable: false },
+    PixelXDimension: { label: '実効画像幅', hex: '0xA002', desc: '記録された有効画像幅', ifd: 'Exif', editable: false },
+    PixelYDimension: { label: '実効画像高さ', hex: '0xA003', desc: '記録された有効画像高', ifd: 'Exif', editable: false },
+    BodySerialNumber: { label: 'カメラシリアル番号', hex: '0xA431', desc: 'カメラ本体の製造固有番号', ifd: 'Exif', editable: false },
+    LensSerialNumber: { label: 'レンズシリアル番号', hex: '0xA435', desc: '装着レンズの製造固有番号', ifd: 'Exif', editable: false },
+    Orientation: { label: '画像方向', hex: '0x0112', desc: '撮影時のカメラの向き', ifd: '0th', editable: false },
+    GPSAltitude: { label: '高度 (標高)', hex: '0x0006', desc: '海抜からの標高（m）', ifd: 'GPS', editable: false },
+    GPSTimeStamp: { label: 'GPS世界標準時', hex: '0x0007', desc: 'GPS衛星が刻む世界標準時', ifd: 'GPS', editable: false },
+    GPSDateStamp: { label: 'GPS日付', hex: '0x001D', desc: 'GPS衛星の日付情報（UTC）', ifd: 'GPS', editable: false },
+    DateTime: { label: 'ファイル変更日時', hex: '0x0132', desc: 'ファイルの最終更新日時', ifd: '0th', editable: false },
+    DateTimeDigitized: { label: 'デジタル化日時', hex: '0x9004', desc: 'デジタル記録された日時', ifd: 'Exif', editable: false },
+    ImageWidth: { label: '画像幅', hex: '0x0100', desc: '画像の横幅画素数', ifd: '0th', editable: false },
+    ImageLength: { label: '画像高さ', hex: '0x0101', desc: '画像の縦幅画素数', ifd: '0th', editable: false },
+    BitsPerSample: { label: 'ビットの深さ', hex: '0x0102', desc: '各色成分のビット数', ifd: '0th', editable: false },
+    Compression: { label: '圧縮方式', hex: '0x0103', desc: '圧縮アルゴリズム', ifd: '0th', editable: false },
+    PhotometricInterpretation: { label: '画素構成', hex: '0x0106', desc: 'カラーモデル・色空間', ifd: '0th', editable: false },
+    SamplesPerPixel: { label: 'コンポーネント数', hex: '0x0115', desc: '1画素あたりの成分数', ifd: '0th', editable: false },
+    PlanarConfiguration: { label: '画像データの並び', hex: '0x011C', desc: '面順次または点順次', ifd: '0th', editable: false },
+    YCbCrSubSampling: { label: '色画素の間引き率', hex: '0x0212', desc: '輝度と色差の間引き比', ifd: '0th', editable: false },
+    YCbCrPositioning: { label: '色画素の配置', hex: '0x0213', desc: '色差成分の配置位置', ifd: '0th', editable: false },
+    XResolution: { label: '幅の解像度', hex: '0x011A', desc: '幅方向の解像度数値', ifd: '0th', editable: false },
+    YResolution: { label: '高さの解像度', hex: '0x011B', desc: '高さ方向の解像度数値', ifd: '0th', editable: false },
+    ResolutionUnit: { label: '解像度単位', hex: '0x0128', desc: '解像度の単位（インチ等）', ifd: '0th', editable: false },
+    TransferFunction: { label: '再生階調特性', hex: '0x012D', desc: '階調変換カーブ', ifd: '0th', editable: false },
+    WhitePoint: { label: '参照白色点', hex: '0x013E', desc: '白色点の色度座標', ifd: '0th', editable: false },
+    PrimaryChromaticities: { label: '原色の色度座標値', hex: '0x013F', desc: 'RGB3原色の色度座標', ifd: '0th', editable: false },
+    YCbCrCoefficients: { label: '色変換マトリクス係数', hex: '0x0211', desc: 'RGBからYCbCrへの変換係数', ifd: '0th', editable: false },
+    ReferenceBlackWhite: { label: '白頭/黒頭参照値', hex: '0x0214', desc: '基準白と基準黒のレベル', ifd: '0th', editable: false },
+    ExifVersion: { label: 'Exifバージョン', hex: '0x9000', desc: '準拠しているExif規格', ifd: 'Exif', editable: false },
+    FlashpixVersion: { label: '対応Flashpix版', hex: '0xA000', desc: '対応Flashpix仕様', ifd: 'Exif', editable: false },
+    ComponentsConfiguration: { label: 'コンポーネント構成', hex: '0x9101', desc: '各チャンネルの配置構造', ifd: 'Exif', editable: false },
+    CompressedBitsPerPixel: { label: '画像圧縮モード', hex: '0x9102', desc: '圧縮時のビットレート比', ifd: 'Exif', editable: false },
+    DigitalZoomRatio: { label: 'デジタルズーム倍率', hex: '0xA404', desc: '電子ズームの拡大率', ifd: 'Exif', editable: false },
+    SceneCaptureType: { label: '撮影シーンタイプ', hex: '0xA406', desc: '人物・風景・夜景など', ifd: 'Exif', editable: false },
+    Contrast: { label: 'コントラスト', hex: '0xA408', desc: '階調の強弱設定', ifd: 'Exif', editable: false },
+    Saturation: { label: '彩度', hex: '0xA409', desc: '色の鮮やかさ設定', ifd: 'Exif', editable: false },
+    Sharpness: { label: 'シャープネス', hex: '0xA40A', desc: '輪郭強調の度合い', ifd: 'Exif', editable: false },
+    GPSSpeed: { label: '移動速度', hex: '0x000D', desc: '撮影時の移動速度数値', ifd: 'GPS', editable: false },
+    GPSImgDirection: { label: '撮影方角', hex: '0x0011', desc: 'レンズが向いていた方角（度）', ifd: 'GPS', editable: false }
+};
+
+// 【左側に最優先で並べる編集可能項目順序】
+const EDITABLE_PRIORITY_KEYS = [
+    'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
+    'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude',
+    'ImageDescription', 'Software', 'UserComment', 'LensMake', 'CameraOwnerName'
+];
+
+// 【編集可能項目の右側に続く、よく見られる閲覧項目の優先順序】
+const READONLY_PRIORITY_KEYS = [
+    'FocalLengthIn35mmFormat', 'ExposureProgram', 'MeteringMode', 'LightSource', 'Flash',
+    'WhiteBalance', 'ExposureMode', 'ExposureBiasValue', 'ColorSpace',
+    'PixelXDimension', 'PixelYDimension', 'BodySerialNumber', 'LensSerialNumber',
+    'Orientation', 'GPSAltitude', 'GPSTimeStamp', 'GPSDateStamp', 'DateTime'
+];
+
+// 簡易モードで表示する項目
+const SIMPLE_FIELD_KEYS = [
+    'Make', 'Model', 'LensModel', 'FocalLength', 'FNumber', 'ExposureTime', 'ISO',
+    'DateTimeOriginal', 'Artist', 'Copyright', 'GPSLatitude', 'GPSLongitude', 'ImageDescription'
+];
+
+// ==========================================
+// 3. 状態管理
+// ==========================================
+let loadedFiles = [];
+let displayMode = localStorage.getItem('viewedit_display_mode') || 'simple';
+let activeFieldKeys = [];
+let currentSort = { key: null, asc: true };
+
+const dropArea = document.getElementById('drop-area');
+const fileInput = document.getElementById('file-input');
+const tableWorkspace = document.getElementById('table-workspace');
+const tableWrapper = document.getElementById('table-wrapper');
+const mainExcelTable = document.getElementById('main-excel-table');
+const tableHead = document.getElementById('table-head');
+const tableBody = document.getElementById('table-body');
+const btnModeSimple = document.getElementById('btn-mode-simple');
+const btnModeDetail = document.getElementById('btn-mode-detail');
+const btnResetAll = document.getElementById('btn-reset-all-edits');
+const btnClearAll = document.getElementById('btn-clear-all');
+const btnExpandHeight = document.getElementById('btn-expand-height');
+const editCountBadge = document.getElementById('edit-count-badge');
+const downloadAllBtn = document.getElementById('download-all-btn');
+const statusText = document.getElementById('status-text');
+const limitNotice = document.getElementById('limit-notice');
+
+const tooltip = document.getElementById('meta-tooltip');
+const ttTitle = document.getElementById('tt-title');
+const ttTag = document.getElementById('tt-tag');
+const ttDesc = document.getElementById('tt-desc');
+const ttStatus = document.getElementById('tt-status');
+
+const filenameModeSelect = document.getElementById('filename-mode');
+const compressChk = document.getElementById('compress-chk');
+const qualitySliderContainer = document.getElementById('quality-slider-container');
+const qualitySlider = document.getElementById('quality-slider');
+const qualityVal = document.getElementById('quality-val');
+
+limitNotice.textContent = `JPEG (.jpg / .jpeg) 対応（現在の上限: 最大 ${currentLimit} 枚）`;
+
+if (isIOS()) {
+    downloadAllBtn.style.display = 'none';
+}
+
+// ==========================================
+// 4. 文字サイズ＆高さ可変の制御と復元
+// ==========================================
+let currentTableFontSize = localStorage.getItem('viewedit_table_font_size') || 'normal';
+let isHeightExpanded = localStorage.getItem('viewedit_height_expanded') === 'true';
+
+function applyTableFontSize(sizeKey) {
+    currentTableFontSize = sizeKey;
+    localStorage.setItem('viewedit_table_font_size', sizeKey);
+
+    mainExcelTable.classList.remove('font-size-normal', 'font-size-small', 'font-size-mini');
+    mainExcelTable.classList.add(`font-size-${sizeKey}`);
+
+    document.querySelectorAll('.font-size-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.size === sizeKey);
+    });
+}
+
+document.querySelectorAll('.font-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyTableFontSize(btn.dataset.size));
+});
+applyTableFontSize(currentTableFontSize);
+
+function applyTableHeightExpand() {
+    if (isHeightExpanded) {
+        tableWrapper.classList.add('is-expanded');
+        btnExpandHeight.textContent = '⤡ 標準高さに戻す';
+        btnExpandHeight.classList.add('active');
+    } else {
+        tableWrapper.classList.remove('is-expanded');
+        btnExpandHeight.textContent = '⤡ 縦を広げる';
+        btnExpandHeight.classList.remove('active');
+    }
+}
+
+btnExpandHeight.addEventListener('click', () => {
+    isHeightExpanded = !isHeightExpanded;
+    localStorage.setItem('viewedit_height_expanded', isHeightExpanded ? 'true' : 'false');
+    applyTableHeightExpand();
+});
+applyTableHeightExpand();
+
+const resizeObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+        if (!isHeightExpanded && entry.contentRect.height > 0) {
+            localStorage.setItem('viewedit_table_custom_height', `${Math.round(entry.contentRect.height)}px`);
+        }
+    }
+});
+resizeObserver.observe(tableWrapper);
+
+const savedCustomHeight = localStorage.getItem('viewedit_table_custom_height');
+if (savedCustomHeight && !isHeightExpanded) {
+    tableWrapper.style.height = savedCustomHeight;
+}
+
+// 設定復元
+if (filenameModeSelect) {
+    const savedMode = localStorage.getItem('viewedit_filename_mode');
+    if (savedMode) filenameModeSelect.value = savedMode;
+    filenameModeSelect.addEventListener('change', (e) => localStorage.setItem('viewedit_filename_mode', e.target.value));
+}
+
+if (compressChk) {
+    const isCompress = localStorage.getItem('viewedit_compress_enabled') === 'true';
+    compressChk.checked = isCompress;
+    qualitySliderContainer.style.display = isCompress ? 'block' : 'none';
+    compressChk.addEventListener('change', (e) => {
+        qualitySliderContainer.style.display = e.target.checked ? 'block' : 'none';
+        localStorage.setItem('viewedit_compress_enabled', e.target.checked);
+    });
+}
+
+if (qualitySlider) {
+    const savedQ = localStorage.getItem('viewedit_jpeg_quality') || '92';
+    qualitySlider.value = savedQ;
+    qualityVal.textContent = `${savedQ}%`;
+    qualitySlider.addEventListener('input', (e) => {
+        qualityVal.textContent = `${e.target.value}%`;
+        localStorage.setItem('viewedit_jpeg_quality', e.target.value);
+    });
+}
+
+function updateModeButtons() {
+    btnModeSimple.classList.toggle('active', displayMode === 'simple');
+    btnModeDetail.classList.toggle('active', displayMode === 'detail');
+    localStorage.setItem('viewedit_display_mode', displayMode);
+}
+btnModeSimple.addEventListener('click', () => {
+    displayMode = 'simple';
+    updateModeButtons();
+    renderTable();
+});
+btnModeDetail.addEventListener('click', () => {
+    displayMode = 'detail';
+    updateModeButtons();
+    renderTable();
+});
+updateModeButtons();
+
+// ==========================================
+// 5. フローティング吹き出し（ツールチップ）制御
+// ==========================================
+function showTooltip(e, key) {
+    const info = EXIF_DICTIONARY[key] || { label: key, hex: '-', desc: 'Exifメタデータタグ', editable: false };
+    
+    ttTitle.textContent = info.label;
+    ttTag.textContent = `${key} (${info.hex || 'Tag'})`;
+    ttDesc.textContent = info.desc || 'メタデータ情報';
+
+    if (info.editable) {
+        ttStatus.textContent = '✏️ 編集可能';
+        ttStatus.className = 'tt-status editable';
+    } else {
+        ttStatus.textContent = '🔒 閲覧のみ';
+        ttStatus.className = 'tt-status readonly';
+    }
+
+    tooltip.style.display = 'block';
+    positionTooltip(e);
+}
+
+function positionTooltip(e) {
+    const x = e.clientX + 14;
+    const y = e.clientY + 14;
+    const ttWidth = 280;
+    const ttHeight = 110;
+
+    const left = (x + ttWidth > window.innerWidth) ? (window.innerWidth - ttWidth - 16) : x;
+    const top = (y + ttHeight > window.innerHeight) ? (y - ttHeight - 20) : y;
+
+    tooltip.style.left = `${Math.max(8, left)}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+}
+
+function hideTooltip() {
+    tooltip.style.display = 'none';
+}
+
+// ==========================================
+// 6. ソート制御ロジック
+// ==========================================
+function sortFilesBy(key) {
+    if (currentSort.key === key) {
+        currentSort.asc = !currentSort.asc;
+    } else {
+        currentSort.key = key;
+        currentSort.asc = true;
+    }
+
+    const mult = currentSort.asc ? 1 : -1;
+
+    loadedFiles.sort((a, b) => {
+        if (key === 'file_name') {
+            return a.file.name.localeCompare(b.file.name, 'ja') * mult;
+        }
+
+        const valA = a.currentMeta[key] !== undefined ? a.currentMeta[key] : (a.allTags[key] !== undefined ? a.allTags[key] : '');
+        const valB = b.currentMeta[key] !== undefined ? b.currentMeta[key] : (b.allTags[key] !== undefined ? b.allTags[key] : '');
+
+        if (valA === '' && valB === '') return 0;
+        if (valA === '') return 1;
+        if (valB === '') return -1;
+
+        const numA = parseFloat(valA);
+        const numB = parseFloat(valB);
+        if (!isNaN(numA) && !isNaN(numB) && String(numA) === String(valA).trim() && String(numB) === String(valB).trim()) {
+            return (numA - numB) * mult;
+        }
+
+        return String(valA).localeCompare(String(valB), 'ja') * mult;
+    });
+
+    renderTable();
+}
+
+// ==========================================
+// 7. ファイル解析＆読み込み
+// ==========================================
+dropArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('drag-over');
+});
+dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
+dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+});
+
+let tableDragCounter = 0;
+
+tableWrapper.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    tableDragCounter++;
+    tableWrapper.classList.add('drag-over');
+});
+
+tableWrapper.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+tableWrapper.addEventListener('dragleave', (e) => {
+    tableDragCounter--;
+    if (tableDragCounter <= 0) {
+        tableDragCounter = 0;
+        tableWrapper.classList.remove('drag-over');
+    }
+});
+
+tableWrapper.addEventListener('drop', (e) => {
+    e.preventDefault();
+    tableDragCounter = 0;
+    tableWrapper.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+    }
+});
+
+async function handleFiles(fileListObj) {
+    const files = Array.from(fileListObj).filter(f => /\.(jpe?g)$/i.test(f.name) || f.type === 'image/jpeg');
+    let added = 0;
+    let skipped = 0;
+
+    statusText.textContent = '写真のメタデータを解析中...';
+
+    for (const file of files) {
+        if (loadedFiles.length >= currentLimit) {
+            skipped++;
+            continue;
+        }
+
+        const id = 'f_' + Math.random().toString(36).substring(2, 9);
+        const rawDataUrl = await readFileAsDataURL(file);
+        const { originalMeta, allTags } = await extractMetadata(file);
+        const thumbUrl = await generateMiniThumb(file);
+
+        loadedFiles.push({
+            id,
+            file,
+            rawDataUrl,
+            thumbUrl,
+            originalMeta: Object.assign({}, originalMeta),
+            currentMeta: Object.assign({}, originalMeta),
+            allTags
+        });
+        added++;
+    }
+
+    fileInput.value = '';
+    renderTable();
+
+    if (skipped > 0) {
+        statusText.textContent = `上限（${currentLimit}枚）に達したため、${skipped}枚をスキップしました。`;
+    } else if (added > 0) {
+        statusText.textContent = `${added}枚の写真を追加しました！（現在 ${loadedFiles.length} 枚）`;
+    }
+}
+
+async function extractMetadata(file) {
+    const originalMeta = {};
+    let allTags = {};
+
+    try {
+        if (typeof exifr !== 'undefined') {
+            allTags = await exifr.parse(file, { tiff: true, exif: true, gps: true, makerNote: false }) || {};
+
+            Object.keys(EXIF_DICTIONARY).forEach(key => {
+                let val = allTags[key];
+                if (val !== undefined && val !== null) {
+                    if (val instanceof Date) {
+                        const pad = n => String(n).padStart(2, '0');
+                        originalMeta[key] = `${val.getFullYear()}:${pad(val.getMonth() + 1)}:${pad(val.getDate())} ${pad(val.getHours())}:${pad(val.getMinutes())}:${pad(val.getSeconds())}`;
+                    } else if (typeof val === 'number') {
+                        originalMeta[key] = Math.round(val * 1000) / 1000;
+                    } else {
+                        originalMeta[key] = String(val);
+                    }
+                } else {
+                    originalMeta[key] = '';
+                }
+            });
+
+            const isoVal = allTags.ISO ?? allTags.PhotographicSensitivity ?? allTags.ISOSpeedRatings;
+            if (isoVal != null && isoVal !== '') {
+                originalMeta.ISO = (typeof isoVal === 'number') ? isoVal : String(isoVal);
+            }
+
+            if (allTags.latitude != null) originalMeta.GPSLatitude = Math.round(allTags.latitude * 100000) / 100000;
+            if (allTags.longitude != null) originalMeta.GPSLongitude = Math.round(allTags.longitude * 100000) / 100000;
+        }
+    } catch (err) {
+        console.warn(`[${file.name}] 解析エラー:`, err);
+    }
+
+    return { originalMeta, allTags };
+}
+
+function generateMiniThumb(file) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const size = 56;
+            let w = img.width;
+            let h = img.height;
+            if (w > h) {
+                w = Math.round((w * size) / h);
+                h = size;
+            } else {
+                h = Math.round((h * size) / w);
+                w = size;
+            }
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve('');
+        };
+        img.src = url;
+    });
+}
+
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ==========================================
+// 8. テーブル描画＆インライン編集
+// ==========================================
+function renderTable() {
+    if (loadedFiles.length === 0) {
+        tableWorkspace.style.display = 'none';
+        downloadAllBtn.disabled = true;
+        currentSort = { key: null, asc: true };
+        return;
+    }
+
+    tableWorkspace.style.display = 'block';
+    downloadAllBtn.disabled = false;
+
+    // 列の並び順の決定
+    if (displayMode === 'simple') {
+        activeFieldKeys = SIMPLE_FIELD_KEYS.slice();
+    } else {
+        const orderedSet = new Set();
+        EDITABLE_PRIORITY_KEYS.forEach(k => orderedSet.add(k));
+        READONLY_PRIORITY_KEYS.forEach(k => orderedSet.add(k));
+        Object.keys(EXIF_DICTIONARY).forEach(k => orderedSet.add(k));
+
+        loadedFiles.forEach(f => {
+            Object.keys(f.allTags).forEach(k => {
+                if (k === 'PhotographicSensitivity' || k === 'ISOSpeedRatings') return;
+                if (typeof f.allTags[k] !== 'object' || f.allTags[k] instanceof Date) {
+                    orderedSet.add(k);
+                }
+            });
+        });
+
+        activeFieldKeys = Array.from(orderedSet);
+    }
+
+    // ヘッダー行生成
+    tableHead.innerHTML = '';
+    const trHead = document.createElement('tr');
+
+    const thFixed = document.createElement('th');
+    thFixed.className = `col-fixed th-fixed-corner sortable-th${currentSort.key === 'file_name' ? ' active-sort' : ''}`;
+    const sortIconName = currentSort.key === 'file_name' ? (currentSort.asc ? '▲' : '▼') : '↕';
+    thFixed.innerHTML = `写真 / ファイル名 (${loadedFiles.length}) <span class="sort-icon">${sortIconName}</span>`;
+    thFixed.onclick = () => sortFilesBy('file_name');
+    trHead.appendChild(thFixed);
+
+    // 操作列
+    const thOp = document.createElement('th');
+    thOp.style.minWidth = '92px';
+    thOp.style.textAlign = 'center';
+    thOp.textContent = '操作';
+    trHead.appendChild(thOp);
+
+    activeFieldKeys.forEach(key => {
+        const info = EXIF_DICTIONARY[key] || { label: key, hex: '', desc: '', editable: false };
+        const isEditable = !!info.editable;
+        const isSorted = currentSort.key === key;
+        const sortIcon = isSorted ? (currentSort.asc ? '▲' : '▼') : '↕';
+
+        const th = document.createElement('th');
+        th.className = `sortable-th ${isEditable ? 'th-editable' : 'th-readonly'}${isSorted ? ' active-sort' : ''}`;
+        th.innerHTML = `${escapeHtml(info.label)} <span class="sort-icon">${sortIcon}</span>`;
+
+        th.addEventListener('click', () => sortFilesBy(key));
+        th.addEventListener('mouseenter', (e) => showTooltip(e, key));
+        th.addEventListener('mousemove', positionTooltip);
+        th.addEventListener('mouseleave', hideTooltip);
+
+        trHead.appendChild(th);
+    });
+
+    tableHead.appendChild(trHead);
+
+    // ボディ行生成
+    tableBody.innerHTML = '';
+    let totalEditedCells = 0;
+    const isIOSDevice = isIOS();
+
+    loadedFiles.forEach((item, fileIdx) => {
+        const tr = document.createElement('tr');
+        tr.dataset.fileId = item.id;
+
+        const tdFixed = document.createElement('td');
+        tdFixed.className = 'col-fixed';
+        tdFixed.innerHTML = `
+            <div class="file-cell-content">
+                <img src="${item.thumbUrl || ''}" class="meta-thumb" alt="thumb">
+                <div class="file-meta-info">
+                    <span class="file-name-text" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
+                    <span class="file-sub-text">${formatFileSize(item.file.size)}</span>
+                </div>
+            </div>
+        `;
+        tr.appendChild(tdFixed);
+
+        // 操作列：リセット ＋ 除外 ＋ 個別ダウンロード/共有ボタン
+        const tdRowAction = document.createElement('td');
+        tdRowAction.style.textAlign = 'center';
+        tdRowAction.style.whiteSpace = 'nowrap';
+        
+        const dlBtnLabel = isIOSDevice ? '共有' : '⬇ 保存';
+        const dlBtnTitle = isIOSDevice ? 'この写真を共有・写真アプリへ保存' : 'この写真の編集内容を反映してダウンロード';
+
+        tdRowAction.innerHTML = `
+            <button type="button" class="mini-btn" title="この写真の変更をリセット" onclick="resetFileEdits('${item.id}')">↺</button>
+            <button type="button" class="mini-btn" style="color:var(--danger-color);" title="この写真を除外" onclick="removeFile('${item.id}')">✖</button>
+            <button type="button" class="mini-btn mini-btn-dl" title="${dlBtnTitle}" onclick="downloadSingleFile('${item.id}')">${dlBtnLabel}</button>
+        `;
+        tr.appendChild(tdRowAction);
+
+        // 各Exif項目セル
+        activeFieldKeys.forEach((key, colIdx) => {
+            const td = document.createElement('td');
+            const info = EXIF_DICTIONARY[key] || { editable: false };
+            const isEditable = !!info.editable;
+
+            const origVal = item.originalMeta[key] !== undefined ? String(item.originalMeta[key]) : (item.allTags[key] !== undefined ? String(item.allTags[key]) : '');
+            const currVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : origVal;
+            const isEdited = isEditable && (currVal !== origVal);
+
+            if (isEdited) totalEditedCells++;
+
+            td.dataset.fileId = item.id;
+            td.dataset.key = key;
+            td.dataset.colIdx = colIdx;
+            td.dataset.fileIdx = fileIdx;
+
+            if (isEditable) {
+                td.className = `editable-cell${isEdited ? ' is-edited' : ''}`;
+                td.innerHTML = `
+                    <span class="cell-text">${escapeHtml(currVal || '-')}</span>
+                    <div class="cell-actions">
+                        ${isEdited ? `<button type="button" class="mini-btn" title="元に戻す" onclick="resetCellEdit(event, '${item.id}', '${key}')">↺</button>` : ''}
+                        <button type="button" class="mini-btn" title="全写真にこの値を適用" onclick="applyToAllFiles(event, '${key}', '${escapeHtml(currVal)}')">↓</button>
+                    </div>
+                `;
+                td.addEventListener('dblclick', () => startCellEdit(td, item, key));
+            } else {
+                td.className = 'readonly-cell';
+                td.textContent = currVal || '-';
+            }
+
+            tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+    });
+
+    editCountBadge.textContent = totalEditedCells > 0 ? `（${totalEditedCells}箇所 編集済み）` : '';
+}
+
+function startCellEdit(td, item, key) {
+    if (td.classList.contains('is-editing')) return;
+
+    td.classList.add('is-editing');
+    const currVal = item.currentMeta[key] !== undefined ? String(item.currentMeta[key]) : '';
+    
+    td.innerHTML = `<input type="text" class="cell-input" value="${escapeHtml(currVal)}">`;
+    const input = td.querySelector('.cell-input');
+    input.focus();
+    input.select();
+
+    const commit = () => {
+        const newVal = input.value.trim();
+        item.currentMeta[key] = newVal;
+        td.classList.remove('is-editing');
+        renderTable();
+    };
+
+    const cancel = () => {
+        td.classList.remove('is-editing');
+        renderTable();
+    };
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') commit();
+        else if (e.key === 'Escape') cancel();
+    });
+}
+
+// セル単位リセット
+window.resetCellEdit = function(e, fileId, key) {
+    e.stopPropagation();
+    const item = loadedFiles.find(f => f.id === fileId);
+    if (item && item.originalMeta[key] !== undefined) {
+        item.currentMeta[key] = item.originalMeta[key];
+        renderTable();
+    }
+};
+
+// 写真単位リセット
+window.resetFileEdits = function(fileId) {
+    const item = loadedFiles.find(f => f.id === fileId);
+    if (item) {
+        item.currentMeta = Object.assign({}, item.originalMeta);
+        renderTable();
+        statusText.textContent = `写真「${item.file.name}」の変更を元に戻しました。`;
+    }
+};
+
+// 写真除外
+window.removeFile = function(fileId) {
+    const idx = loadedFiles.findIndex(f => f.id === fileId);
+    if (idx !== -1) {
+        loadedFiles.splice(idx, 1);
+        renderTable();
+    }
+};
+
+// 全写真へ一括反映
+window.applyToAllFiles = function(e, key, val) {
+    e.stopPropagation();
+    const info = EXIF_DICTIONARY[key] || { label: key };
+    if (!confirm(`「${info.label}」の値をすべての写真（計${loadedFiles.length}枚）に一括適用しますか？\n設定値: "${val}"`)) return;
+
+    loadedFiles.forEach(f => {
+        f.currentMeta[key] = val;
+    });
+    renderTable();
+    statusText.textContent = `すべての写真の「${info.label}」に "${val}" を一括適用しました。`;
+};
+
+// 全編集リセット
+btnResetAll.addEventListener('click', () => {
+    if (confirm('すべての写真の編集を初期状態に戻しますか？')) {
+        loadedFiles.forEach(f => {
+            f.currentMeta = Object.assign({}, f.originalMeta);
+        });
+        renderTable();
+        statusText.textContent = 'すべての編集を初期状態に戻しました。';
+    }
+});
+
+// 全ファイル除外
+btnClearAll.addEventListener('click', () => {
+    loadedFiles = [];
+    renderTable();
+    statusText.textContent = 'すべてのファイルを除外しました。';
+});
+
+// ==========================================
+// 9. Excelコピペ対応（クリップボード貼り付け）
+// ==========================================
+window.addEventListener('paste', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+
+    const clipText = (e.clipboardData || window.clipboardData).getData('text');
+    if (!clipText || loadedFiles.length === 0) return;
+
+    const rows = clipText.split(/\r?\n/).filter(r => r.length > 0);
+    if (rows.length === 0) return;
+
+    let startFileIdx = 0;
+    let startColIdx = 0;
+
+    const hoveredCell = document.querySelector('.editable-cell:hover');
+    if (hoveredCell) {
+        startFileIdx = parseInt(hoveredCell.dataset.fileIdx, 10) || 0;
+        startColIdx = parseInt(hoveredCell.dataset.colIdx, 10) || 0;
+    }
+
+    let appliedCount = 0;
+
+    rows.forEach((rowStr, rOffset) => {
+        const targetFileIdx = startFileIdx + rOffset;
+        if (targetFileIdx >= loadedFiles.length) return;
+
+        const cells = rowStr.split('\t');
+        cells.forEach((val, cOffset) => {
+            const targetColIdx = startColIdx + cOffset;
+            if (targetColIdx >= activeFieldKeys.length) return;
+
+            const key = activeFieldKeys[targetColIdx];
+            const info = EXIF_DICTIONARY[key];
+            if (info && info.editable) {
+                loadedFiles[targetFileIdx].currentMeta[key] = val.trim();
+                appliedCount++;
+            }
+        });
+    });
+
+    if (appliedCount > 0) {
+        renderTable();
+        statusText.textContent = `クリップボードから ${appliedCount} 箇所のセルに値を貼り付けました！`;
+    }
+});
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+}
+
+// ==========================================
+// 10. 保存・ダウンロードパイプライン
+// ==========================================
+
+// 個別ダウンロード・共有ハンドラ（表の操作列から呼び出し）
+window.downloadSingleFile = async function(fileId) {
+    const item = loadedFiles.find(f => f.id === fileId);
+    if (!item) return;
+
+    statusText.textContent = `「${item.file.name}」を保存処理中...`;
+
+    const nameMode = filenameModeSelect.value;
+    const isCompress = compressChk.checked;
+    const quality = parseFloat(qualitySlider.value) / 100;
+
+    try {
+        const res = await exportSingleFile(item, { nameMode, isCompress, quality });
+
+        if (isIOS()) {
+            const fileObj = new File([res.blob], res.filename, { type: res.mimeType });
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
+                await navigator.share({
+                    files: [fileObj],
+                    title: res.filename
+                });
+                statusText.textContent = `「${res.filename}」の共有メニューを開きました。`;
+            } else {
+                const a = document.createElement('a');
+                a.href = res.dataUrl;
+                a.download = res.filename;
+                a.click();
+                statusText.textContent = `「${res.filename}」を保存しました。`;
+            }
+        } else {
+            const a = document.createElement('a');
+            a.href = res.dataUrl;
+            a.download = res.filename;
+            a.click();
+            statusText.textContent = `「${res.filename}」をダウンロードしました！`;
+        }
+    } catch (err) {
+        console.error(`[${item.file.name}] 保存エラー:`, err);
+        statusText.textContent = `「${item.file.name}」の保存中にエラーが発生しました。`;
+    }
+};
+
+// 一括ダウンロード（PC環境用）
+downloadAllBtn.addEventListener('click', async () => {
+    if (loadedFiles.length === 0) return;
+
+    downloadAllBtn.disabled = true;
+    const oldText = downloadAllBtn.textContent;
+    downloadAllBtn.textContent = 'ダウンロード処理中...';
+
+    const nameMode = filenameModeSelect.value;
+    const isCompress = compressChk.checked;
+    const quality = parseFloat(qualitySlider.value) / 100;
+
+    for (let i = 0; i < loadedFiles.length; i++) {
+        statusText.textContent = `ダウンロード中... (${i + 1} / ${loadedFiles.length}枚)`;
+        const item = loadedFiles[i];
+
+        try {
+            const res = await exportSingleFile(item, { nameMode, isCompress, quality });
+            const a = document.createElement('a');
+            a.href = res.dataUrl;
+            a.download = res.filename;
+            a.click();
+            await new Promise(r => setTimeout(r, 400));
+        } catch (err) {
+            console.error(`[${item.file.name}] 一括DLエラー:`, err);
+        }
+    }
+
+    statusText.textContent = `全 ${loadedFiles.length} 枚のダウンロードが完了しました！`;
+    downloadAllBtn.textContent = oldText;
+    downloadAllBtn.disabled = false;
+});
+
+async function exportSingleFile(item, opts) {
+    const outFilename = getOutputFilename(item.file.name, opts.nameMode);
+    let outputBlob = null;
+
+    let exifDict = { "0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": null };
+    try {
+        if (typeof piexif !== 'undefined') {
+            exifDict = piexif.load(item.rawDataUrl);
+        }
+    } catch (e) {
+        console.warn('Exif初期読み込みエラー、新規作成します:', e);
+    }
+
+    applyMetaToExifDict(exifDict, item.currentMeta);
+    const exifBytes = piexif.dump(exifDict);
+
+    if (!opts.isCompress) {
+        const updatedDataUrl = piexif.insert(exifBytes, item.rawDataUrl);
+        outputBlob = dataURLtoBlob(updatedDataUrl);
+    } else {
+        const compressedDataUrl = await recompressViaCanvas(item.file, opts.quality);
+        const updatedDataUrl = piexif.insert(exifBytes, compressedDataUrl);
+        outputBlob = dataURLtoBlob(updatedDataUrl);
+    }
+
+    const dataUrl = URL.createObjectURL(outputBlob);
+    return {
+        filename: outFilename,
+        mimeType: 'image/jpeg',
+        blob: outputBlob,
+        dataUrl: dataUrl,
+        thumbUrl: item.thumbUrl
+    };
+}
+
+function applyMetaToExifDict(dict, meta) {
+    if (!dict["0th"]) dict["0th"] = {};
+    if (!dict["Exif"]) dict["Exif"] = {};
+    if (!dict["GPS"]) dict["GPS"] = {};
+
+    if (meta.Make !== undefined) dict["0th"][piexif.ImageIFD.Make] = meta.Make;
+    if (meta.Model !== undefined) dict["0th"][piexif.ImageIFD.Model] = meta.Model;
+    if (meta.Artist !== undefined) dict["0th"][piexif.ImageIFD.Artist] = meta.Artist;
+    if (meta.Copyright !== undefined) dict["0th"][piexif.ImageIFD.Copyright] = meta.Copyright;
+    if (meta.Software !== undefined) dict["0th"][piexif.ImageIFD.Software] = meta.Software;
+    if (meta.ImageDescription !== undefined) dict["0th"][piexif.ImageIFD.ImageDescription] = meta.ImageDescription;
+    if (meta.LensModel !== undefined) dict["Exif"][piexif.ExifIFD.LensModel] = meta.LensModel;
+    if (meta.LensMake !== undefined) dict["Exif"][piexif.ExifIFD.LensMake] = meta.LensMake;
+    if (meta.UserComment !== undefined) dict["Exif"][piexif.ExifIFD.UserComment] = meta.UserComment;
+    if (meta.CameraOwnerName !== undefined) dict["Exif"][piexif.ExifIFD.CameraOwnerName] = meta.CameraOwnerName;
+
+    if (meta.DateTimeOriginal) {
+        dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = meta.DateTimeOriginal;
+        dict["0th"][piexif.ImageIFD.DateTime] = meta.DateTimeOriginal;
+    }
+
+    const toRational = (val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return null;
+        const d = 1000;
+        return [Math.round(num * d), d];
+    };
+
+    if (meta.FocalLength) {
+        const r = toRational(meta.FocalLength);
+        if (r) dict["Exif"][piexif.ExifIFD.FocalLength] = r;
+    }
+
+    if (meta.FNumber) {
+        const r = toRational(meta.FNumber);
+        if (r) dict["Exif"][piexif.ExifIFD.FNumber] = r;
+    }
+
+    if (meta.ExposureTime) {
+        const s = String(meta.ExposureTime).trim();
+        const frac = s.match(/1\s*\/\s*(\d+(?:\.\d+)?)/);
+        if (frac) {
+            dict["Exif"][piexif.ExifIFD.ExposureTime] = [1, Math.round(parseFloat(frac[1]))];
+        } else {
+            const sec = parseFloat(s);
+            if (!isNaN(sec)) {
+                dict["Exif"][piexif.ExifIFD.ExposureTime] = toRational(sec);
+            }
+        }
+    }
+
+    if (meta.ISO) {
+        const isoNum = parseInt(meta.ISO, 10);
+        if (!isNaN(isoNum)) dict["Exif"][piexif.ExifIFD.ISOSpeedRatings] = isoNum;
+    }
+
+    if (meta.GPSLatitude !== undefined && meta.GPSLatitude !== '' && meta.GPSLongitude !== undefined && meta.GPSLongitude !== '') {
+        const lat = parseFloat(meta.GPSLatitude);
+        const lng = parseFloat(meta.GPSLongitude);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            const degToDms = (deg) => {
+                const absDeg = Math.abs(deg);
+                const d = Math.floor(absDeg);
+                const mFloat = (absDeg - d) * 60;
+                const m = Math.floor(mFloat);
+                const sFloat = (mFloat - m) * 60;
+                return [[d, 1], [m, 1], [Math.round(sFloat * 100), 100]];
+            };
+
+            dict["GPS"][piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? "N" : "S";
+            dict["GPS"][piexif.GPSIFD.GPSLatitude] = degToDms(lat);
+            dict["GPS"][piexif.GPSIFD.GPSLongitudeRef] = lng >= 0 ? "E" : "W";
+            dict["GPS"][piexif.GPSIFD.GPSLongitude] = degToDms(lng);
+            dict["GPS"][piexif.GPSIFD.GPSVersionID] = [2, 2, 0, 0];
+        }
+    }
+}
+
+function recompressViaCanvas(file, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('画像ロードエラー'));
+        };
+        img.src = url;
+    });
+}
+
+function getOutputFilename(originalName, mode) {
+    if (mode === 'keep') return originalName;
+    if (mode === 'suffix') {
+        const dotIdx = originalName.lastIndexOf('.');
+        if (dotIdx === -1) return `${originalName}_edit`;
+        return `${originalName.substring(0, dotIdx)}_edit${originalName.substring(dotIdx)}`;
+    }
+    return `edit_${originalName}`;
+}
+
+function dataURLtoBlob(dataurl) {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+</script>
+
+</body>
+</html>
