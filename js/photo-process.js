@@ -2,6 +2,7 @@
  * Octopus Photo Process - ツール固有スクリプト
  * ・ブラウザ完結型写真加工・色調補正・フィルター適用
  * ・長辺2000px縮小プレビュー ＆ 保存時オリジナル解像度フルサイズレンダリング
+ * ・iOS実機判定（body.is-ios付与）によるiOS専用余白制御（PC/Android影響ゼロ）
  * ・100dvh対応 ＆ visualViewport監視によるスマホツールバー伸縮時の完全同期
  * ・キャンバス表示サイズ完全同期（syncCanvasSizeToStage）による原画比較ズレ防止
  * ・クリップボードからの画像直接読み込み（ボタン押下 ＆ Ctrl+Vペースト）
@@ -29,6 +30,11 @@
         const ua = navigator.userAgent.toLowerCase();
         return /iphone|ipod/.test(ua) || /ipad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     };
+
+    // iOS実機判定時にbodyへクラスを自動付与（PCおよびAndroidには影響なし）
+    if (isIOS()) {
+        document.body.classList.add('is-ios');
+    }
 
     // 12色相マスタ定義（30度刻み）
     const HSL_COLOR_DEFS = [
@@ -240,7 +246,6 @@
         stageResizeObserver.observe(stageCanvasArea);
     }
 
-    // スマホのアドレスバー出入り（visualViewport）を検知して即座に追従
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
             syncCanvasSizeToStage();

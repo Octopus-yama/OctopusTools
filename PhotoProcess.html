@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover を追加してセーフエリアを有効化 -->
+    <!-- viewport-fit=cover でiOSのセーフエリアを有効化 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Octopus Photo Process｜Octopus Tools</title>
     <!-- ファビコン指定 -->
@@ -23,7 +23,6 @@
         body {
             padding: 0 !important;
             margin: 0 !important;
-            /* 100vh問題を解消する 100dvh 対応 */
             height: 100vh;
             height: 100dvh;
             display: flex;
@@ -397,6 +396,7 @@
             border-color: var(--danger-color) !important;
         }
 
+        /* 拡大率ドロップダウン */
         .zoom-dropdown-container {
             position: relative;
             display: inline-flex;
@@ -852,7 +852,7 @@
                 overflow: hidden;
             }
 
-            /* スマホ時は「保存設定」タブ選択時のみフッター表示＆セーフエリア確保 */
+            /* Androidおよび標準スマホのフッター設定 */
             .panel-footer {
                 display: none;
                 padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
@@ -861,7 +861,6 @@
                 display: flex;
             }
 
-            /* パネルコンテンツ：最下部が隠れないよう十分なセーフパディングを付与 */
             .panel-content {
                 padding-right: 52px !important;
                 padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
@@ -887,6 +886,21 @@
             .panel-content::-webkit-scrollbar-thumb:hover,
             .panel-content::-webkit-scrollbar-thumb:active {
                 background-color: var(--primary-hover);
+            }
+
+            /* ====================================================
+               【iOS実機専用スタイル（PCおよびAndroidには影響なし）】
+            ==================================================== */
+            body.is-ios .panel-footer {
+                /* ボタンが半分隠れないよう、iOSのみ下部余白を大幅確保 */
+                padding-bottom: calc(36px + env(safe-area-inset-bottom, 16px)) !important;
+            }
+            body.is-ios .panel-content {
+                /* パネル内最下部スクロール時の余白もiOS専用に拡張 */
+                padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px)) !important;
+            }
+            body.is-ios .zoom-popover {
+                bottom: calc(70px + env(safe-area-inset-bottom, 16px)) !important;
             }
         }
     </style>
