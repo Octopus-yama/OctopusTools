@@ -2,6 +2,7 @@
  * Octopus Photo Process - ツール固有スクリプト
  * ・ブラウザ完結型写真加工・色調補正・フィルター適用
  * ・長辺2000px縮小プレビュー ＆ 保存時オリジナル解像度フルサイズレンダリング
+ * ・100dvh対応 ＆ visualViewport監視によるスマホツールバー伸縮時の完全同期
  * ・キャンバス表示サイズ完全同期（syncCanvasSizeToStage）による原画比較ズレ防止
  * ・クリップボードからの画像直接読み込み（ボタン押下 ＆ Ctrl+Vペースト）
  * ・境界線スプリッタードラッグによる領域比率変更（PC左右 / スマホ上下）
@@ -239,6 +240,13 @@
         stageResizeObserver.observe(stageCanvasArea);
     }
 
+    // スマホのアドレスバー出入り（visualViewport）を検知して即座に追従
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            syncCanvasSizeToStage();
+        });
+    }
+
     // ==========================================
     // 4. ヘッダー非表示・全画面表示制御
     // ==========================================
@@ -348,7 +356,6 @@
     // ==========================================
     if (dropArea && fileInput) {
         dropArea.addEventListener('click', (e) => {
-            // クリップボードボタンを押した場合はファイル選択を開かない
             if (e.target.closest('#btn-paste-clipboard')) return;
             fileInput.click();
         });
@@ -373,7 +380,6 @@
         });
     }
 
-    // 【新機能①】クリップボードからの画像貼り付け処理
     async function pasteImageFromClipboard() {
         try {
             if (!navigator.clipboard || !navigator.clipboard.read) {
@@ -412,9 +418,8 @@
         });
     }
 
-    // 画像未読み込み時のキーボードペースト（Ctrl+V / Cmd+V）連動
     window.addEventListener('paste', (e) => {
-        if (originalImage) return; // 既に画像を開いている時はスキップ
+        if (originalImage) return;
         const items = (e.clipboardData || window.clipboardData)?.items;
         if (!items) return;
 
@@ -795,17 +800,14 @@
             let g = data[i + 1];
             let b = data[i + 2];
 
-            // 露光量 ＆ 明るさ
             r = r * expMult + brightAdd;
             g = g * expMult + brightAdd;
             b = b * expMult + brightAdd;
 
-            // コントラスト
             r = contrastFactor * (r - 128) + 128;
             g = contrastFactor * (g - 128) + 128;
             b = contrastFactor * (b - 128) + 128;
 
-            // ハイライト＆シャドウ
             const lum = 0.299 * r + 0.587 * g + 0.114 * b;
             if (params.highlights !== 0 && lum > 128) {
                 const hFactor = ((lum - 128) / 127) * (params.highlights / 100) * 40;
@@ -816,19 +818,16 @@
                 r += sFactor; g += sFactor; b += sFactor;
             }
 
-            // ガンマ補正
             if (gammaCorrection !== 1.0) {
                 r = 255 * Math.pow(Math.max(0, r) / 255, gammaCorrection);
                 g = 255 * Math.pow(Math.max(0, g) / 255, gammaCorrection);
                 b = 255 * Math.pow(Math.max(0, b) / 255, gammaCorrection);
             }
 
-            // 色温度 ＆ ティント ＆ カラーバランス
             r += tempR + (tintM * 0.5) + crR;
             g += tintG - (tintM * 0.5) + mgG;
             b += tempB + ybB;
 
-            // 彩度 ＆ 自然な鮮やかさ（Vibrance）
             const maxVal = Math.max(r, g, b);
             const minVal = Math.min(r, g, b);
             const currentSat = maxVal === 0 ? 0 : (maxVal - minVal) / maxVal;
@@ -846,7 +845,6 @@
                 b = lum + (b - lum) * satMult;
             }
 
-            // 12色相HSL特定色調整
             if (hasSelectiveColor) {
                 r = Math.min(255, Math.max(0, r));
                 g = Math.min(255, Math.max(0, g));
@@ -879,7 +877,6 @@
                 }
             }
 
-            // プリセットフィルター計算
             if (hasPreset && filterRatio > 0) {
                 let pr = r;
                 let pg = g;
