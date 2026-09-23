@@ -116,6 +116,7 @@
             display: flex;
             overflow: hidden;
             position: relative;
+            min-height: 0;
         }
 
         /* 左側：写真表示ステージ */
@@ -127,19 +128,24 @@
             flex-direction: column;
             overflow: hidden;
             user-select: none;
+            min-height: 0;
+            min-width: 280px;
         }
 
-        #btn-show-header {
+        /* 復帰ボタン群 */
+        .stage-top-controls {
             position: absolute;
             top: 12px;
             right: 12px;
-            left: auto;
-            z-index: 30;
-            display: none;
+            z-index: 35;
+            display: flex;
+            gap: 8px;
+        }
+        .stage-top-btn {
             background: rgba(30, 34, 27, 0.85);
             backdrop-filter: blur(6px);
             color: #ecf0e6;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
@@ -148,7 +154,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             transition: var(--transition);
         }
-        #btn-show-header:hover {
+        .stage-top-btn:hover {
             background: var(--primary);
             color: #ffffff;
             border-color: var(--primary);
@@ -175,6 +181,7 @@
         }
 
         .stage-dropzone {
+            position: relative; /* 右下ボタンの絶対配置基準 */
             border: 2px dashed var(--primary-border);
             border-radius: var(--radius-lg);
             width: 92%;
@@ -203,6 +210,33 @@
         .stage-dropzone span {
             font-size: 13px;
             color: #a3b098;
+        }
+
+        /* クリップボードから貼り付けボタン（右下配置） */
+        .stage-paste-btn {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 5;
+        }
+        .stage-paste-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-1px);
         }
 
         .canvas-viewport {
@@ -310,7 +344,7 @@
         .crop-grid-line.v1 { left: 33.333%; top: 0; bottom: 0; width: 1px; }
         .crop-grid-line.v2 { left: 66.666%; top: 0; bottom: 0; width: 1px; }
 
-        /* 下部固定操作バー（吹き出しが上に飛び出せるよう overflow: visible に修正） */
+        /* 下部固定操作バー */
         .stage-bottom-bar {
             background: var(--card-bg);
             border-top: 1px solid var(--border-color);
@@ -323,7 +357,7 @@
             flex-shrink: 0;
             width: 100%;
             box-sizing: border-box;
-            overflow: visible !important; /* 吹き出しを上部エリアに確実に表示 */
+            overflow: visible !important;
             white-space: nowrap;
         }
         .stage-btn {
@@ -361,7 +395,7 @@
             border-color: var(--danger-color) !important;
         }
 
-        /* 拡大率ドロップダウン（前面表示を最優先に強化） */
+        /* 拡大率ドロップダウン */
         .zoom-dropdown-container {
             position: relative;
             display: inline-flex;
@@ -381,7 +415,7 @@
             display: none;
             flex-direction: column;
             gap: 2px;
-            z-index: 9999 !important; /* キャンバスの前面に確実に配置 */
+            z-index: 9999 !important;
             min-width: 130px;
         }
         .zoom-popover.open {
@@ -408,15 +442,50 @@
             color: #ffffff;
         }
 
+        /* 可変スプリッター */
+        .workspace-resizer {
+            background: var(--border-color);
+            flex-shrink: 0;
+            z-index: 22;
+            position: relative;
+            display: none;
+            transition: background 0.15s ease;
+            touch-action: none;
+        }
+        .workspace-resizer:hover, .workspace-resizer.is-dragging {
+            background: var(--primary) !important;
+        }
+        .resizer-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--border-color);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        @media (min-width: 861px) {
+            .workspace-resizer {
+                width: 7px;
+                cursor: col-resize;
+                display: block;
+            }
+            .resizer-handle {
+                width: 3px;
+                height: 36px;
+            }
+        }
+
         /* 右側：コントロールパネル */
         .panel-area {
             width: 360px;
             background: var(--card-bg);
-            border-left: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
             z-index: 10;
+            min-height: 0;
         }
 
         .panel-tabs {
@@ -425,6 +494,7 @@
             background: var(--card-bg-sub);
             overflow-x: auto;
             scrollbar-width: none;
+            flex-shrink: 0;
         }
         .panel-tabs::-webkit-scrollbar {
             display: none;
@@ -457,6 +527,7 @@
             overflow-y: auto;
             padding: 18px 16px;
             -webkit-overflow-scrolling: touch;
+            min-height: 0;
         }
         .tab-pane {
             display: none;
@@ -712,19 +783,101 @@
             gap: 8px;
         }
 
+        /* 全画面表示モードスタイル */
+        body.is-fullscreen-mode .app-header,
+        body.is-fullscreen-mode .app-nav-bar,
+        body.is-fullscreen-mode .workspace-resizer,
+        body.is-fullscreen-mode .panel-area {
+            display: none !important;
+        }
+        body.is-fullscreen-mode #btn-exit-fullscreen {
+            display: inline-flex !important;
+        }
+        body.is-fullscreen-mode .stage-area {
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+
+        /* スマホ画面専用レスポンシブスタイル */
         @media (max-width: 860px) {
             .app-workspace {
                 flex-direction: column;
+                min-height: 0;
             }
             .stage-area {
-                height: 48vh;
+                height: 44vh;
                 flex: none;
+                min-height: 140px;
             }
+
+            .workspace-resizer {
+                width: 100% !important;
+                height: 10px !important;
+                cursor: row-resize;
+                display: block;
+            }
+            .resizer-handle {
+                width: 36px;
+                height: 4px;
+            }
+
+            .stage-bottom-bar {
+                justify-content: flex-start !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch;
+                padding: 7px 14px;
+                gap: 8px;
+            }
+            .zoom-popover {
+                position: fixed !important;
+                bottom: 58px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 10000 !important;
+                max-height: 45vh;
+                overflow-y: auto;
+            }
+
             .panel-area {
-                width: 100%;
+                width: 100% !important;
                 flex: 1;
                 border-left: none;
-                border-top: 1px solid var(--border-color);
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            .panel-footer {
+                display: none;
+            }
+            .panel-area.is-export-active .panel-footer {
+                display: flex;
+            }
+
+            .panel-content {
+                padding-right: 52px !important;
+                overflow-y: scroll !important;
+                scrollbar-width: auto;
+                scrollbar-color: var(--primary) var(--card-bg-sub);
+            }
+            .panel-content::-webkit-scrollbar {
+                width: 42px !important;
+                display: block !important;
+                background-color: var(--card-bg-sub);
+            }
+            .panel-content::-webkit-scrollbar-track {
+                background: var(--card-bg-sub);
+                border-left: 2px solid var(--border-color);
+            }
+            .panel-content::-webkit-scrollbar-thumb {
+                background-color: var(--primary);
+                border-radius: 12px;
+                border: 8px solid var(--card-bg-sub);
+                min-height: 50px;
+            }
+            .panel-content::-webkit-scrollbar-thumb:hover,
+            .panel-content::-webkit-scrollbar-thumb:active {
+                background-color: var(--primary-hover);
             }
         }
     </style>
@@ -752,17 +905,23 @@
 </div>
 
 <!-- メインエディタワークスペース -->
-<div class="app-workspace">
+<div class="app-workspace" id="app-workspace">
 
-    <!-- 左側：写真表示ステージ -->
+    <!-- 左側（上側）：写真表示ステージ -->
     <div class="stage-area" id="stage-area">
-        <button type="button" id="btn-show-header">▼ ヘッダーを表示</button>
+        <div class="stage-top-controls">
+            <button type="button" class="stage-top-btn" id="btn-show-header" style="display: none;">▼ ヘッダーを表示</button>
+            <button type="button" class="stage-top-btn" id="btn-exit-fullscreen" style="display: none;">✕ 通常表示に戻す (Esc)</button>
+        </div>
 
         <div class="stage-canvas-area" id="stage-canvas-area">
             <div class="stage-dropzone" id="drop-area">
                 <p>ここに写真をドラッグ＆ドロップ</p>
                 <span>または枠内をタップしてファイルを選択（JPG / PNG / WebP）</span>
                 <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" style="display: none;">
+                
+                <!-- 【新機能①】クリップボード貼り付けボタン（右下） -->
+                <button type="button" class="stage-paste-btn" id="btn-paste-clipboard" title="クリップボードの画像を読み込みます">📋 クリップボードから貼り付け</button>
             </div>
 
             <div class="canvas-viewport" id="canvas-viewport">
@@ -797,6 +956,8 @@
                     🔍 <span id="zoom-percent-display">100%</span> ▾
                 </button>
                 <div class="zoom-popover" id="zoom-popover">
+                    <button type="button" class="zoom-opt" data-zoom="fullscreen">⛶ 全画面表示</button>
+                    <div style="height: 1px; background: var(--border-color); margin: 2px 0;"></div>
                     <button type="button" class="zoom-opt" data-zoom="fit">画面に合わせる</button>
                     <button type="button" class="zoom-opt active" data-zoom="100">100% (等倍)</button>
                     <button type="button" class="zoom-opt" data-zoom="125">125%</button>
@@ -816,8 +977,13 @@
         </div>
     </div>
 
-    <!-- 右側：コントロールパネル -->
-    <div class="panel-area">
+    <!-- 領域比率変更用スプリッターバー -->
+    <div class="workspace-resizer" id="workspace-resizer" title="ドラッグして表示領域の割合を変更できます">
+        <div class="resizer-handle"></div>
+    </div>
+
+    <!-- 右側（下側）：コントロールパネル -->
+    <div class="panel-area" id="panel-area">
         <div class="panel-tabs">
             <button type="button" class="panel-tab-btn active" data-tab="tab-adjust">編集</button>
             <button type="button" class="panel-tab-btn" data-tab="tab-color">カラー</button>
@@ -1093,6 +1259,15 @@
                         <input type="checkbox" id="export-exif-chk" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
                         <span>Exifメタデータを引き継ぐ（撮影日時・機材情報等）</span>
                     </label>
+                </div>
+
+                <hr style="margin: 18px 0; border: none; border-top: 1px dashed var(--border-color);">
+                <div class="control-group">
+                    <label class="control-label">◆ クリップボードに書き出す</label>
+                    <p style="font-size: 11.5px; color: var(--text-muted); margin: 4px 0 8px 0;">
+                        現在の編集済み画像をファイル保存せず、クリップボードへ直接コピーします。チャットやSNS、資料等へそのまま貼り付け（Ctrl+V / Cmd+V）できます。
+                    </p>
+                    <button type="button" class="opt-btn" id="btn-copy-clipboard" style="width: 100%; padding: 10px; font-weight: 700; background: var(--primary-light); color: var(--primary); border-color: var(--primary-border);">📋 画像をクリップボードにコピー</button>
                 </div>
 
                 <hr style="margin: 18px 0; border: none; border-top: 1px dashed var(--border-color);">

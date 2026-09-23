@@ -8,10 +8,10 @@
  */
 
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（ルールB：キープ）
-    version: "1.27",
+    // 1. メイン（共通）バージョン情報（ルールA：v1.29へ繰り上げ）
+    version: "1.29",
     date: "2026-09-23",
-    updateNote: "「Octopus Photo Process」のHSL12色相拡張（彩度/明度縦並び展開）およびJSON書き出しモーダルUIを実装",
+    updateNote: "「Octopus Photo Process」の領域可変スプリッター、リサイズ入力連動クロップ、全画面表示モード、クリップボード書き出しを実装",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
@@ -42,8 +42,8 @@ const OCTOPUS_APP_INFO = {
         },
         photoprocess: {
             name: "Photo Process",
-            subVersion: "6",
-            updateNote: "HSL特定色調整の12色相拡張・彩度/明度の全色縦並び展開、プリセットJSON書き出し時の説明＆ファイル名入力モーダルUI実装"
+            subVersion: "8",
+            updateNote: "境界スプリッターによる表示領域ドラッグ伸縮、リサイズ数値連動クロップ枠、全画面プレビュー表示、クリップボード画像直接コピーを実装"
         }
     }
 };
