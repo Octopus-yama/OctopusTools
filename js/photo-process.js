@@ -3,11 +3,14 @@
  * ・ブラウザ完結型写真加工・色調補正・フィルター適用
  * ・長辺2000px縮小プレビュー ＆ 保存時オリジナル解像度フルサイズレンダリング
  * ・キャンバス表示サイズ完全同期（syncCanvasSizeToStage）による原画比較ズレ防止
+ * ・クリップボードからの画像直接読み込み（ボタン押下 ＆ Ctrl+Vペースト）
+ * ・境界線スプリッタードラッグによる領域比率変更（PC左右 / スマホ上下）
+ * ・全画面プレビューモード（⛶ 全画面表示 ＆ 復帰機能）
+ * ・リサイズ入力からクロップ枠への双方向連動 ＆ 「自由」自動切り替え
+ * ・クリップボードへの画像直接書き出し（PNG Blobコピー）
  * ・下部固定操作バー ＆ 画像スクロール/ピンチズーム・パン移動
  * ・拡大率プリセットポップオーバー（100%, 125%, 150%, 185%, 200% 等）
  * ・スプリット比較 5モード順次切替（左右・上下・反転）
- * ・スマホ表示時のパネルフッター動的表示制御（「保存設定」タブ限定表示）
- * ・タブ切替時の切り抜き（クロップ）枠自動解除
  * ・HSL特定色調整の12色相拡張 ＆ 彩度/明度 全色縦並び展開
  * ・銀塩グレインノイズの2系統化（強さ・量 ＆ 粗さ・粒子サイズ）
  * ・オールドレンズ風フィルター（軟調フレア・アンバートーン・周辺減光連動）
@@ -102,6 +105,7 @@
     let panStart = { x: 0, y: 0 };
     let pinchStartDistance = 0;
     let pinchStartZoom = 100;
+    let isFullscreenMode = false;
 
     // スプリット比較 5モード管理
     const SPLIT_MODES = [
@@ -127,6 +131,12 @@
     // DOM要素キャッシュ
     const dropArea = document.getElementById('drop-area');
     const fileInput = document.getElementById('file-input');
+    const btnPasteClipboard = document.getElementById('btn-paste-clipboard');
+    const appWorkspace = document.getElementById('app-workspace');
+    const stageArea = document.getElementById('stage-area');
+    const panelArea = document.getElementById('panel-area');
+    const workspaceResizer = document.getElementById('workspace-resizer');
+
     const stageCanvasArea = document.getElementById('stage-canvas-area');
     const canvasViewport = document.getElementById('canvas-viewport');
     const beforeCanvas = document.getElementById('before-canvas');
@@ -138,6 +148,7 @@
     const btnZoomToggle = document.getElementById('btn-zoom-toggle');
     const zoomPercentDisplay = document.getElementById('zoom-percent-display');
     const zoomPopover = document.getElementById('zoom-popover');
+    const btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
 
     const cropOverlay = document.getElementById('crop-overlay');
     const cropBox = document.getElementById('crop-box');
@@ -160,6 +171,7 @@
     const btnResetAll = document.getElementById('btn-reset-all');
     const btnRestoreLast = document.getElementById('btn-restore-last');
     const btnSaveImage = document.getElementById('btn-save-image');
+    const btnCopyClipboard = document.getElementById('btn-copy-clipboard');
 
     const exportFormat = document.getElementById('export-format');
     const exportQuality = document.getElementById('export-quality');
@@ -173,7 +185,6 @@
     const btnToggleHeader = document.getElementById('btn-toggle-header');
     const btnShowHeader = document.getElementById('btn-show-header');
 
-    const panelAreaEl = document.querySelector('.panel-area');
     const historyListContainer = document.getElementById('history-list-container');
     const historyTotalCount = document.getElementById('history-total-count');
 
@@ -229,7 +240,7 @@
     }
 
     // ==========================================
-    // 4. ヘッダー非表示・再表示制御
+    // 4. ヘッダー非表示・全画面表示制御
     // ==========================================
     function setHeaderVisibility(visible) {
         if (!mainAppHeader || !mainAppNav || !btnShowHeader) return;
@@ -240,7 +251,7 @@
         } else {
             mainAppHeader.classList.add('is-hidden');
             mainAppNav.classList.add('is-hidden');
-            btnShowHeader.style.display = 'block';
+            btnShowHeader.style.display = isFullscreenMode ? 'none' : 'block';
         }
         setTimeout(syncCanvasSizeToStage, 50);
     }
@@ -248,11 +259,100 @@
     if (btnToggleHeader) btnToggleHeader.addEventListener('click', () => setHeaderVisibility(false));
     if (btnShowHeader) btnShowHeader.addEventListener('click', () => setHeaderVisibility(true));
 
+    function setFullscreenMode(enable) {
+        isFullscreenMode = enable;
+        document.body.classList.toggle('is-fullscreen-mode', enable);
+
+        if (enable) {
+            if (zoomPercentDisplay) zoomPercentDisplay.textContent = '⛶ 全画面';
+        } else {
+            if (zoomPercentDisplay) zoomPercentDisplay.textContent = `${currentZoom}%`;
+        }
+
+        setTimeout(() => {
+            syncCanvasSizeToStage();
+        }, 50);
+    }
+
+    if (btnExitFullscreen) {
+        btnExitFullscreen.addEventListener('click', () => setFullscreenMode(false));
+    }
+
     // ==========================================
-    // 5. 画像読み込み・クリア制御
+    // 5. 領域比率変更スプリッター（可変リサイザー）
+    // ==========================================
+    if (workspaceResizer && appWorkspace && panelArea && stageArea) {
+        let isResizingWorkspace = false;
+        let startPos = 0;
+        let startDimension = 0;
+
+        workspaceResizer.addEventListener('pointerdown', (e) => {
+            isResizingWorkspace = true;
+            workspaceResizer.classList.add('is-dragging');
+            workspaceResizer.setPointerCapture(e.pointerId);
+
+            const isMobile = window.innerWidth <= 860;
+            if (isMobile) {
+                startPos = e.clientY;
+                startDimension = stageArea.clientHeight;
+            } else {
+                startPos = e.clientX;
+                startDimension = panelArea.clientWidth;
+            }
+            e.preventDefault();
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isResizingWorkspace) return;
+            const isMobile = window.innerWidth <= 860;
+
+            if (isMobile) {
+                const deltaY = e.clientY - startPos;
+                const newHeight = startDimension + deltaY;
+                const totalH = appWorkspace.clientHeight;
+                const minH = Math.round(totalH * 0.20);
+                const maxH = Math.round(totalH * 0.75);
+
+                if (newHeight >= minH && newHeight <= maxH) {
+                    stageArea.style.height = `${newHeight}px`;
+                    syncCanvasSizeToStage();
+                }
+            } else {
+                const deltaX = startPos - e.clientX;
+                const newWidth = startDimension + deltaX;
+                const totalW = appWorkspace.clientWidth;
+                const minPanelW = 260;
+                const maxPanelW = Math.min(650, totalW - 300);
+
+                if (newWidth >= minPanelW && newWidth <= maxPanelW) {
+                    panelArea.style.width = `${newWidth}px`;
+                    syncCanvasSizeToStage();
+                }
+            }
+        });
+
+        const stopWorkspaceResize = (e) => {
+            if (isResizingWorkspace) {
+                isResizingWorkspace = false;
+                workspaceResizer.classList.remove('is-dragging');
+                try { workspaceResizer.releasePointerCapture(e.pointerId); } catch (err) {}
+                syncCanvasSizeToStage();
+            }
+        };
+        window.addEventListener('pointerup', stopWorkspaceResize);
+        window.addEventListener('pointercancel', stopWorkspaceResize);
+    }
+
+    // ==========================================
+    // 6. 画像読み込み・クリア・クリップボード貼り付け制御
     // ==========================================
     if (dropArea && fileInput) {
-        dropArea.addEventListener('click', () => fileInput.click());
+        dropArea.addEventListener('click', (e) => {
+            // クリップボードボタンを押した場合はファイル選択を開かない
+            if (e.target.closest('#btn-paste-clipboard')) return;
+            fileInput.click();
+        });
+
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 loadSelectedFile(e.target.files[0]);
@@ -272,6 +372,63 @@
             }
         });
     }
+
+    // 【新機能①】クリップボードからの画像貼り付け処理
+    async function pasteImageFromClipboard() {
+        try {
+            if (!navigator.clipboard || !navigator.clipboard.read) {
+                alert('お使いのブラウザはクリップボードからの直接読み取りに対応していません。\n「Ctrl+V」での貼り付けをお試しください。');
+                return;
+            }
+
+            const items = await navigator.clipboard.read();
+            let foundImage = false;
+
+            for (const item of items) {
+                const imgType = item.types.find(t => t.startsWith('image/'));
+                if (imgType) {
+                    const blob = await item.getType(imgType);
+                    const ext = imgType.split('/')[1] || 'png';
+                    const file = new File([blob], `clipboard_${Date.now()}.${ext}`, { type: imgType });
+                    loadSelectedFile(file);
+                    foundImage = true;
+                    break;
+                }
+            }
+
+            if (!foundImage) {
+                alert('クリップボードに画像が見つかりませんでした。\n画像をコピーしてから再度お試しください。');
+            }
+        } catch (err) {
+            console.warn('クリップボード読み取り失敗:', err);
+            alert('クリップボードの読み取りに失敗しました。\nブラウザのアクセス許可をご確認ください。');
+        }
+    }
+
+    if (btnPasteClipboard) {
+        btnPasteClipboard.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pasteImageFromClipboard();
+        });
+    }
+
+    // 画像未読み込み時のキーボードペースト（Ctrl+V / Cmd+V）連動
+    window.addEventListener('paste', (e) => {
+        if (originalImage) return; // 既に画像を開いている時はスキップ
+        const items = (e.clipboardData || window.clipboardData)?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    loadSelectedFile(file);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }
+    });
 
     async function loadSelectedFile(file) {
         if (!file.type.startsWith('image/')) return;
@@ -325,6 +482,7 @@
         syncParamsToUI();
 
         hideCropOverlay();
+        setFullscreenMode(false);
         resetZoomAndPan();
         canvasViewport.style.display = 'none';
         stageBottomBar.style.display = 'none';
@@ -361,7 +519,7 @@
     }
 
     // ==========================================
-    // 6. ズーム・パン移動＆拡大率ポップオーバー制御
+    // 7. ズーム・パン移動＆拡大率ポップオーバー制御
     // ==========================================
     function setZoom(val, keepPan = true) {
         let zoom = Math.max(50, Math.min(400, Math.round(val)));
@@ -370,7 +528,9 @@
             panOffset = { x: 0, y: 0 };
         }
         applyViewportTransform();
-        if (zoomPercentDisplay) zoomPercentDisplay.textContent = `${zoom}%`;
+        if (zoomPercentDisplay && !isFullscreenMode) {
+            zoomPercentDisplay.textContent = `${zoom}%`;
+        }
 
         document.querySelectorAll('.zoom-opt').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.zoom === String(zoom));
@@ -381,7 +541,9 @@
         currentZoom = 100;
         panOffset = { x: 0, y: 0 };
         applyViewportTransform();
-        if (zoomPercentDisplay) zoomPercentDisplay.textContent = '100%';
+        if (zoomPercentDisplay && !isFullscreenMode) {
+            zoomPercentDisplay.textContent = '100%';
+        }
         document.querySelectorAll('.zoom-opt').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.zoom === '100');
         });
@@ -410,9 +572,13 @@
         document.querySelectorAll('.zoom-opt').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const zVal = btn.dataset.zoom;
-                if (zVal === 'fit') {
+                if (zVal === 'fullscreen') {
+                    setFullscreenMode(true);
+                } else if (zVal === 'fit') {
+                    if (isFullscreenMode) setFullscreenMode(false);
                     resetZoomAndPan();
                 } else {
+                    if (isFullscreenMode) setFullscreenMode(false);
                     setZoom(parseInt(zVal, 10), false);
                 }
                 zoomPopover.classList.remove('open');
@@ -480,7 +646,7 @@
     }
 
     // ==========================================
-    // 7. 高速 HSL ⇄ RGB 変換
+    // 8. 高速 HSL ⇄ RGB 変換
     // ==========================================
     function rgbToHsl(r, g, b) {
         r /= 255; g /= 255; b /= 255;
@@ -525,12 +691,11 @@
     }
 
     // ==========================================
-    // 8. 画像処理パイプライン（Core Renderer）
+    // 9. 画像処理パイプライン（Core Renderer）
     // ==========================================
     function renderPipeline(sourceCv, targetCv, params) {
         if (!sourceCv || !targetCv) return;
 
-        // 1. 回転・反転・角度補正
         const isFlippedAngle = params.rotation % 180 !== 0;
         let srcW = isFlippedAngle ? sourceCv.height : sourceCv.width;
         let srcH = isFlippedAngle ? sourceCv.width : sourceCv.height;
@@ -549,7 +714,6 @@
         rCtx.drawImage(sourceCv, -sourceCv.width / 2, -sourceCv.height / 2);
         rCtx.restore();
 
-        // 2. 切り抜き処理
         let croppedCv = rotatedCv;
         if (params.crop) {
             const cx = Math.max(0, Math.round(rotatedCv.width * params.crop.x));
@@ -566,7 +730,6 @@
             }
         }
 
-        // 3. リサイズ処理
         let resizedCv = croppedCv;
         if (params.resize && params.resize.w > 0 && params.resize.h > 0) {
             const rw = params.resize.w;
@@ -852,7 +1015,7 @@
     }
 
     // ==========================================
-    // 9. スプリット比較 5モード順次切替＆制御
+    // 10. スプリット比較 5モード順次切替＆制御
     // ==========================================
     function updateSplitClipping() {
         const mode = SPLIT_MODES[currentSplitIndex];
@@ -949,7 +1112,7 @@
     }
 
     // ==========================================
-    // 10. 切り抜き枠（クロップオーバーレイ）制御
+    // 11. 切り抜き枠（クロップオーバーレイ）＆リサイズ双方向連動
     // ==========================================
     function showCropOverlay(aspect = 'free') {
         if (!afterCanvas || !cropOverlay || !cropBox) return;
@@ -1023,6 +1186,41 @@
         if (!afterCanvas) return;
         if (resizeW) resizeW.value = afterCanvas.width;
         if (resizeH) resizeH.value = afterCanvas.height;
+    }
+
+    function syncCropFromResizeInputs() {
+        if (!isCropOverlayActive || !afterCanvas || cropOverlay.clientWidth === 0) return;
+
+        const scaleX = afterCanvas.width / cropOverlay.clientWidth;
+        const scaleY = afterCanvas.height / cropOverlay.clientHeight;
+        const reqW = parseFloat(resizeW.value) || 0;
+        const reqH = parseFloat(resizeH.value) || 0;
+
+        if (reqW <= 0 || reqH <= 0) return;
+
+        let targetBoxW = Math.round(reqW / scaleX);
+        let targetBoxH = Math.round(reqH / scaleY);
+
+        const maxW = cropOverlay.clientWidth;
+        const maxH = cropOverlay.clientHeight;
+
+        targetBoxW = Math.max(30, Math.min(maxW, targetBoxW));
+        targetBoxH = Math.max(30, Math.min(maxH, targetBoxH));
+
+        const centerX = cropRect.x + cropRect.w / 2;
+        const centerY = cropRect.y + cropRect.h / 2;
+
+        cropRect.w = targetBoxW;
+        cropRect.h = targetBoxH;
+        cropRect.x = Math.max(0, Math.min(maxW - cropRect.w, Math.round(centerX - cropRect.w / 2)));
+        cropRect.y = Math.max(0, Math.min(maxH - cropRect.h, Math.round(centerY - cropRect.h / 2)));
+
+        updateCropBoxDOM();
+
+        activeAspect = 'free';
+        aspectBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.aspect === 'free');
+        });
     }
 
     aspectBtns.forEach(btn => {
@@ -1145,6 +1343,7 @@
                 const newW = parseFloat(resizeW.value) || 0;
                 if (newW > 0) resizeH.value = Math.round(newW * ratio);
             }
+            syncCropFromResizeInputs();
         });
 
         resizeH.addEventListener('input', () => {
@@ -1153,6 +1352,7 @@
                 const newH = parseFloat(resizeH.value) || 0;
                 if (newH > 0) resizeW.value = Math.round(newH * ratio);
             }
+            syncCropFromResizeInputs();
         });
     }
 
@@ -1198,7 +1398,7 @@
     }
 
     // ==========================================
-    // 11. HSL 12色相 彩度・明度 UI動的生成＆バインド
+    // 12. HSL 12色相 彩度・明度 UI動的生成＆バインド
     // ==========================================
     function buildHslControls() {
         if (!hslSatContainer || !hslLumContainer) return;
@@ -1321,7 +1521,7 @@
     buildHslControls();
 
     // ==========================================
-    // 12. 操作履歴（ヒストリー管理）
+    // 13. 操作履歴（ヒストリー管理）
     // ==========================================
     function pushHistoryState(actionLabel = 'パラメータ変更') {
         if (historyIndex < historyList.length - 1) {
@@ -1404,6 +1604,13 @@
     if (btnRedo) btnRedo.addEventListener('click', performRedo);
 
     window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (isFullscreenMode) {
+                setFullscreenMode(false);
+            }
+            return;
+        }
+
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
             e.preventDefault();
             if (e.shiftKey) performRedo();
@@ -1415,7 +1622,7 @@
     });
 
     // ==========================================
-    // 13. UIバインディング＆イベント制御（スマホ時フッター動的切替）
+    // 14. UIバインディング＆イベント制御
     // ==========================================
     document.querySelectorAll('.panel-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1429,9 +1636,8 @@
             const pane = document.getElementById(btn.dataset.tab);
             if (pane) pane.classList.add('active');
 
-            // 【修正①】「保存設定」タブ選択時のみスマホ時にフッターを表示させるクラスを付与
-            if (panelAreaEl) {
-                panelAreaEl.classList.toggle('is-export-active', btn.dataset.tab === 'tab-export');
+            if (panelArea) {
+                panelArea.classList.toggle('is-export-active', btn.dataset.tab === 'tab-export');
             }
         });
     });
@@ -1620,7 +1826,52 @@
     }
 
     // ==========================================
-    // 14. JSONエクスポート / インポート（モーダルUI対応）
+    // 15. クリップボード直接書き出し
+    // ==========================================
+    if (btnCopyClipboard) {
+        btnCopyClipboard.addEventListener('click', async () => {
+            if (!originalImage) {
+                alert('写真が読み込まれていません。');
+                return;
+            }
+
+            const oldText = btnCopyClipboard.textContent;
+            btnCopyClipboard.disabled = true;
+            btnCopyClipboard.textContent = 'コピー中...';
+
+            try {
+                const fullCanvas = document.createElement('canvas');
+                fullCanvas.width = originalImage.naturalWidth;
+                fullCanvas.height = originalImage.naturalHeight;
+                const fCtx = fullCanvas.getContext('2d');
+                fCtx.drawImage(originalImage, 0, 0);
+
+                const exportCanvas = document.createElement('canvas');
+                renderPipeline(fullCanvas, exportCanvas, currentParams);
+
+                const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/png'));
+                if (!blob) throw new Error('画像の生成に失敗しました');
+
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+
+                btnCopyClipboard.textContent = '✔ クリップボードにコピー完了！';
+                setTimeout(() => {
+                    btnCopyClipboard.textContent = oldText;
+                    btnCopyClipboard.disabled = false;
+                }, 2000);
+            } catch (err) {
+                console.warn('クリップボードコピー失敗:', err);
+                alert('クリップボードへのコピーに失敗しました。\nブラウザの権限設定をご確認ください。');
+                btnCopyClipboard.textContent = oldText;
+                btnCopyClipboard.disabled = false;
+            }
+        });
+    }
+
+    // ==========================================
+    // 16. JSONエクスポート / インポート
     // ==========================================
     function formatDefaultJsonFilename() {
         const now = new Date();
@@ -1644,12 +1895,6 @@
 
     if (btnModalClose) btnModalClose.addEventListener('click', closeJsonModal);
     if (btnModalCancel) btnModalCancel.addEventListener('click', closeJsonModal);
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && jsonExportModal?.classList.contains('open')) {
-            closeJsonModal();
-        }
-    });
 
     if (jsonExportModal) {
         jsonExportModal.addEventListener('click', (e) => {
@@ -1726,7 +1971,7 @@
     }
 
     // ==========================================
-    // 15. 保存・エクスポートパイプライン
+    // 17. 保存・エクスポートパイプライン
     // ==========================================
     if (exportFormat && qualityControlContainer) {
         exportFormat.addEventListener('change', (e) => {
