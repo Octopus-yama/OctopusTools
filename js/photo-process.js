@@ -4,6 +4,7 @@
  * ・長辺2000px縮小プレビュー ＆ 保存時オリジナル解像度フルサイズレンダリング
  * ・iOS実機判定（body.is-ios付与）によるiOS専用余白制御（PC/Android影響ゼロ）
  * ・100dvh対応 ＆ visualViewport監視によるスマホツールバー伸縮時の完全同期
+ * ・拡大率ポップオーバーのスマホ時body直下テレポート（iOS前面突き抜け保証）
  * ・キャンバス表示サイズ完全同期（syncCanvasSizeToStage）による原画比較ズレ防止
  * ・クリップボードからの画像直接読み込み（ボタン押下 ＆ Ctrl+Vペースト）
  * ・境界線スプリッタードラッグによる領域比率変更（PC左右 / スマホ上下）
@@ -567,9 +568,26 @@
         }
     }
 
+    // スマホ時はポップオーバーをbody直下にテレポートしてiOSの潜り込みを100%防止
+    function syncZoomPopoverParent() {
+        if (!zoomPopover) return;
+        const isMobile = window.innerWidth <= 860;
+        const container = document.querySelector('.zoom-dropdown-container');
+        if (isMobile) {
+            if (zoomPopover.parentElement !== document.body) {
+                document.body.appendChild(zoomPopover);
+            }
+        } else {
+            if (container && zoomPopover.parentElement !== container) {
+                container.appendChild(zoomPopover);
+            }
+        }
+    }
+
     if (btnZoomToggle && zoomPopover) {
         btnZoomToggle.addEventListener('click', (e) => {
             e.stopPropagation();
+            syncZoomPopoverParent();
             zoomPopover.classList.toggle('open');
         });
 
@@ -577,6 +595,10 @@
             if (!zoomPopover.contains(e.target) && e.target !== btnZoomToggle) {
                 zoomPopover.classList.remove('open');
             }
+        });
+
+        window.addEventListener('resize', () => {
+            syncZoomPopoverParent();
         });
 
         document.querySelectorAll('.zoom-opt').forEach(btn => {

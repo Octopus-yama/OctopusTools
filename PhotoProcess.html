@@ -121,7 +121,7 @@
             min-height: 0;
         }
 
-        /* 左側：写真表示ステージ */
+        /* 左側：写真表示ステージ（z-index: 30 で右側パネルより常に上位に設定） */
         .stage-area {
             flex: 1;
             background: #181c15;
@@ -132,6 +132,7 @@
             user-select: none;
             min-height: 0;
             min-width: 280px;
+            z-index: 30;
         }
 
         /* 復帰ボタン群 */
@@ -354,7 +355,7 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            z-index: 25;
+            z-index: 35;
             flex-shrink: 0;
             width: 100%;
             box-sizing: border-box;
@@ -416,7 +417,7 @@
             display: none;
             flex-direction: column;
             gap: 2px;
-            z-index: 9999 !important;
+            z-index: 100000 !important;
             min-width: 130px;
         }
         .zoom-popover.open {
@@ -478,7 +479,7 @@
             }
         }
 
-        /* 右側：コントロールパネル */
+        /* 右側：コントロールパネル（z-index: 10） */
         .panel-area {
             width: 360px;
             background: var(--card-bg);
@@ -830,7 +831,6 @@
                 justify-content: flex-start !important;
                 overflow-x: auto !important;
                 overflow-y: hidden !important;
-                -webkit-overflow-scrolling: touch;
                 padding: 7px 14px;
                 gap: 8px;
             }
@@ -839,7 +839,7 @@
                 bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
-                z-index: 10000 !important;
+                z-index: 100000 !important;
                 max-height: 45dvh;
                 overflow-y: auto;
             }
@@ -852,7 +852,6 @@
                 overflow: hidden;
             }
 
-            /* Androidおよび標準スマホのフッター設定 */
             .panel-footer {
                 display: none;
                 padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
@@ -888,19 +887,16 @@
                 background-color: var(--primary-hover);
             }
 
-            /* ====================================================
-               【iOS実機専用スタイル（PCおよびAndroidには影響なし）】
-            ==================================================== */
+            /* iOS実機専用スタイル */
             body.is-ios .panel-footer {
-                /* ボタンが半分隠れないよう、iOSのみ下部余白を大幅確保 */
                 padding-bottom: calc(36px + env(safe-area-inset-bottom, 16px)) !important;
             }
             body.is-ios .panel-content {
-                /* パネル内最下部スクロール時の余白もiOS専用に拡張 */
                 padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px)) !important;
             }
             body.is-ios .zoom-popover {
-                bottom: calc(70px + env(safe-area-inset-bottom, 16px)) !important;
+                bottom: calc(75px + env(safe-area-inset-bottom, 16px)) !important;
+                z-index: 100000 !important;
             }
         }
     </style>
