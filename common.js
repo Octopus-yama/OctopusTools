@@ -9,9 +9,9 @@
 
 const OCTOPUS_APP_INFO = {
     // 1. メイン（共通）バージョン情報（キープ）
-    version: "1.31",
+    version: "1.32",
     date: "2026-09-23",
-    updateNote: "「Octopus Mosaic & Blur」にクリップボード画像貼り付け機能およびショートカットキー対応を追加",
+    updateNote: "「Octopus Mosaic & Blur」にクリップボード画像貼り付け機能およびショートカットキー対応を追加/GA4の追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
