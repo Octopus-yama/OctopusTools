@@ -8,10 +8,10 @@
  */
 
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（ルールA：v1.29へ繰り上げ）
-    version: "1.29",
+    // 1. メイン（共通）バージョン情報（キープ）
+    version: "1.31",
     date: "2026-09-23",
-    updateNote: "「Octopus Photo Process」の領域可変スプリッター、リサイズ入力連動クロップ、全画面表示モード、クリップボード書き出しを実装",
+    updateNote: "「Octopus Mosaic & Blur」にクリップボード画像貼り付け機能およびショートカットキー対応を追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
@@ -22,13 +22,13 @@ const OCTOPUS_APP_INFO = {
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "131",
-            updateNote: "固有スクリプトを「js/exif-frame.js」へ完全外出し・即時関数カプセル化"
+            subVersion: "132",
+            updateNote: "ドロップエリアへのクリップボード画像貼り付けボタン設置（EXIF注意喚起付記）およびCtrl+V貼り付け対応"
         },
         mosaic: {
             name: "Mosaic & Blur",
-            subVersion: "114",
-            updateNote: "固有スクリプトを「js/mosaic-blur.js」へ完全外出し・即時関数カプセル化"
+            subVersion: "116",
+            updateNote: "「画像をクリップボードにコピー」ボタンを追加（ファイル保存を介さない直接コピーに対応）"
         },
         cleaner: {
             name: "EXIF Cleaner",

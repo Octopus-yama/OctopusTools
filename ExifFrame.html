@@ -36,6 +36,55 @@
         @font-face { font-family: 'Cherry Bomb'; src: url('font/CherryBombOne-Regular.ttf') format('truetype'); }
         @font-face { font-family: 'はちまるポップ'; src: url('font/HachiMaruPop-Regular.ttf') format('truetype'); }
 
+        /* ドロップエリアの拡張（クリップボードボタン配置用） */
+        .drop-area {
+            position: relative;
+            padding-bottom: 48px;
+        }
+
+        /* クリップボード貼り付けボタン */
+        .stage-paste-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 5;
+            max-width: calc(100% - 24px);
+        }
+        .stage-paste-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 600px) {
+            .drop-area {
+                padding-bottom: 20px;
+            }
+            .stage-paste-btn {
+                position: static;
+                margin-top: 14px;
+                white-space: normal;
+                font-size: 11px;
+                text-align: center;
+                justify-content: center;
+                width: auto;
+            }
+        }
+
         /* アップロード済みファイル一覧 */
         .file-list { 
             margin-top: 18px; 
@@ -692,6 +741,7 @@
             <!-- 選択された画像のサムネイルがここに追加されます -->
         </div>
         <button id="clear-all-btn" class="clear-all-btn">すべてのファイルをクリア</button>
+        <button type="button" class="stage-paste-btn" id="btn-paste-clipboard" title="クリップボードの画像を読み込みます">📋 クリップボードから貼り付け（※EXIFデータが正常に読み込めない場合があります）</button>
     </div>
 
     <!-- 1. EXIF情報の確認・修正 -->

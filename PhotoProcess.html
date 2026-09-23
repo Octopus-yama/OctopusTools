@@ -233,6 +233,7 @@
             align-items: center;
             gap: 4px;
             z-index: 5;
+            margin-left: 20px;
         }
         .stage-paste-btn:hover {
             border-color: var(--primary);
@@ -938,7 +939,7 @@
                 <p>ここに写真をドラッグ＆ドロップ</p>
                 <span>または枠内をタップしてファイルを選択（JPG / PNG / WebP）</span>
                 <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" style="display: none;">
-                <button type="button" class="stage-paste-btn" id="btn-paste-clipboard" title="クリップボードの画像を読み込みます">📋 クリップボードから貼り付け</button>
+                <button type="button" class="stage-paste-btn" id="btn-paste-clipboard" title="クリップボードの画像を読み込みます">📋 クリップボードから貼り付け（※EXIFデータが正常に読み込めない場合があります）</button>
             </div>
 
             <div class="canvas-viewport" id="canvas-viewport">

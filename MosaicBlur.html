@@ -18,6 +18,55 @@
            Mosaic & Blur ツール固有スタイル
         ------------------------------------ */
 
+        /* ドロップエリアの拡張（クリップボードボタン配置用） */
+        .drop-area {
+            position: relative;
+            padding-bottom: 48px;
+        }
+
+        /* クリップボード貼り付けボタン */
+        .stage-paste-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 5;
+            max-width: calc(100% - 24px);
+        }
+        .stage-paste-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 600px) {
+            .drop-area {
+                padding-bottom: 20px;
+            }
+            .stage-paste-btn {
+                position: static;
+                margin-top: 14px;
+                white-space: normal;
+                font-size: 11px;
+                text-align: center;
+                justify-content: center;
+                width: auto;
+            }
+        }
+
         /* 編集ワークスペース */
         #workspace { 
             display: none; 
@@ -260,6 +309,39 @@
             border-color: var(--danger-color); 
             background: rgba(201, 74, 74, 0.05); 
         }
+
+        /* サブアクションボタン（クリップボード直接コピー用） */
+        .secondary-btn {
+            background: var(--card-bg-sub);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            letter-spacing: 0.01em;
+        }
+        .secondary-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        .secondary-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
@@ -285,6 +367,7 @@
         <p>ここをタップするか、画像ファイルをドラッグ＆ドロップ</p>
         <span>JPEG / PNG / WebP / GIF 対応</span>
         <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp, image/gif" style="display: none;">
+        <button type="button" class="stage-paste-btn" id="btn-paste-clipboard" title="クリップボードの画像を読み込みます">📋 クリップボードから貼り付け（※EXIFデータが正常に読み込めない場合があります）</button>
     </div>
 
     <!-- 編集ワークスペース -->
@@ -432,8 +515,9 @@
         </div>
     </div>
 
-    <!-- メイン保存ボタン -->
+    <!-- アクションボタン群 -->
     <button id="save-btn" class="main-btn" disabled>加工した画像を保存する</button>
+    <button id="copy-clipboard-btn" class="secondary-btn" disabled>📋 画像をクリップボードにコピー</button>
     <div id="status-text" style="text-align: center; margin-top: 14px; font-weight: bold; font-size: 14px; color: var(--primary);"></div>
 </div>
 
