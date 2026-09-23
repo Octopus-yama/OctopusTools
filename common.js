@@ -1,6 +1,6 @@
 /**
  * Octopus Tools - 共通管理スクリプト
- * ・バージョンおよび更新内容の一元管理（メイン＋各ツール計5系統）
+ * ・バージョンおよび更新内容の一元管理（メイン＋各ツール計6系統）
  * ・グローバルナビゲーション自動生成
  * ・ダークモード（テーマ）切り替え＆永続化
  * ・PCワイド表示切り替え＆永続化
@@ -8,17 +8,17 @@
  */
 
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（v1.24を維持）
-    version: "1.24",
-    date: "2026-09-22",
-    updateNote: "「EXIF View & Edit」に露出プログラム〜露出モードの簡易モード追加、および閲覧専用セルの選択・移動・コピー操作対応を実装",
+    // 1. メイン（共通）バージョン情報（ルールB：キープ）
+    version: "1.27",
+    date: "2026-09-23",
+    updateNote: "「Octopus Photo Process」のHSL12色相拡張（彩度/明度縦並び展開）およびJSON書き出しモーダルUIを実装",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
         index: {
             name: "TOP",
-            subVersion: "12",
-            updateNote: "インラインスクリプトを完全撤廃し、HTMLの軽量・スリム化を完了"
+            subVersion: "13",
+            updateNote: "「Octopus Photo Process」へのリンク・ツールカードを追加"
         },
         exif: {
             name: "EXIF Frame",
@@ -39,6 +39,11 @@ const OCTOPUS_APP_INFO = {
             name: "EXIF View & Edit",
             subVersion: "23",
             updateNote: "簡易モードにおける露出関連6項目（露出プログラム〜露出モード）の表示位置を「画像タイトル」の次へ移動"
+        },
+        photoprocess: {
+            name: "Photo Process",
+            subVersion: "6",
+            updateNote: "HSL特定色調整の12色相拡張・彩度/明度の全色縦並び展開、プリセットJSON書き出し時の説明＆ファイル名入力モーダルUI実装"
         }
     }
 };
@@ -49,7 +54,8 @@ const OCTOPUS_NAV_ITEMS = [
     { id: "exif", name: "EXIF Frame", url: "ExifFrame.html", icon: "📷" },
     { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
     { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" },
-    { id: "viewedit", name: "EXIF View & Edit", url: "ExifViewEdit.html", icon: "📝" }
+    { id: "viewedit", name: "EXIF View & Edit", url: "ExifViewEdit.html", icon: "📝" },
+    { id: "photoprocess", name: "Photo Process", url: "PhotoProcess.html", icon: "🎨" }
 ];
 
 (function() {
@@ -58,6 +64,7 @@ const OCTOPUS_NAV_ITEMS = [
     // --------------------------------------------------
     function getCurrentPageKey() {
         const path = window.location.pathname.toLowerCase();
+        if (path.includes("photoprocess")) return "photoprocess";
         if (path.includes("exifviewedit")) return "viewedit";
         if (path.includes("exifcleaner")) return "cleaner";
         if (path.includes("exifframe")) return "exif";
@@ -92,14 +99,7 @@ const OCTOPUS_NAV_ITEMS = [
         const wideToggleBtn = document.getElementById('wide-toggle-btn');
         if (!mainContainer || !wideToggleBtn) return;
 
-        const legacyKeyMap = {
-            viewedit: 'viewedit_wide_mode',
-            cleaner: 'cleaner_wide_mode',
-            mosaic: 'mosaic_wide_mode',
-            exif: 'exif_wide_mode'
-        };
-        const legacyKey = legacyKeyMap[pageKey];
-        let isWideMode = (localStorage.getItem('octopus_wide_mode') ?? (legacyKey ? localStorage.getItem(legacyKey) : null)) === 'true';
+        let isWideMode = localStorage.getItem('octopus_wide_mode') === 'true';
 
         const applyWideMode = (notify = false) => {
             if (isWideMode) {
