@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NYCV0Y514R"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-NYCV0Y514R');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus EXIF Analyzer｜Octopus Tools</title>
+    <link rel="icon" href="img/icon_analyzer.ico" type="image/x-icon">
+    <meta name="description" content="大量の写真からExifメタデータを高速抽出し、機材別の焦点距離やズーム両端の傾向、露出設定を可視化してAI分析プロンプトを出力するWebツール。" />
+    <!-- 依存ライブラリ（同階層から読み込み） -->
+    <script src="full.umd.js"></script>
+    <script src="chart.umd.js"></script>
+    <!-- 共通スタイルシート -->
+    <link rel="stylesheet" href="common.css">
+    <!-- 共通管理スクリプト -->
+    <script src="common.js"></script>
+
+    <style>
+        /* ---------------------------------
+           EXIF Analyzer 固有スタイル
+        ------------------------------------ */
+        .upload-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .upload-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+        .upload-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        /* 読み込み所要時間の注記テキスト */
+        .drop-time-notice {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            line-height: 1.45;
+        }
+
+        /* プロンプトコピーボタンのサイズ固定 */
+        #btn-copy-prompt {
+            min-width: 176px;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .progress-box {
+            display: none;
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.15s ease;
+        }
+
+        /* フローティング注意バッジ */
+        .notice-banner {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translate(-50%, -16px);
+            background: rgba(254, 243, 199, 0.96);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            white-space: nowrap;
+            max-width: 92vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        [data-theme="dark"] .notice-banner {
+            background: rgba(45, 36, 21, 0.96);
+            border-color: #785a25;
+            color: #fde68a;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        .notice-banner.is-active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, 0);
+        }
+
+        /* 機材コントロールパネル */
+        .gear-control-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header-block {
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.55;
+            margin-top: 4px;
+        }
+
+        /* 機材一覧リスト：20件程度までスクロールなしで展開 */
+        .gear-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 1200px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .gear-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-size: 13px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .gear-item:hover {
+            border-color: var(--primary-border);
+            background: var(--primary-light);
+        }
+        .gear-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+            flex: 1;
+        }
+        .gear-item-left input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .gear-name-container {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .gear-name-cam {
+            font-weight: 700;
+            color: var(--text-color);
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .gear-name-lens {
+            font-size: 12px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-left: 6px;
+        }
+        .gear-count-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+
+        .quick-btn-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .quick-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .setting-sub-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            margin-top: 8px;
+        }
+        .setting-sub-table th, .setting-sub-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .setting-sub-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        .summary-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .summary-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .summary-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .summary-card.accent-card {
+            border-color: var(--accent-border);
+            background: var(--accent-light);
+        }
+        .summary-card.accent-card .summary-value {
+            color: var(--accent);
+        }
+
+        .summary-card.is-skipped {
+            background: var(--card-bg-sub) !important;
+            border-color: var(--border-color) !important;
+            opacity: 0.65;
+        }
+        .summary-card.is-skipped .summary-value {
+            color: var(--text-muted) !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 6px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 16px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 2px;
+        }
+        .chart-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: var(--transition);
+        }
+        .chart-tab-btn:hover {
+            color: var(--primary);
+        }
+        .chart-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .chart-container-box {
+            position: relative;
+            height: 380px;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-sizing: border-box;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(0, 0, 0, 0.38);
+            backdrop-filter: blur(2px);
+            z-index: 999999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            pointer-events: all;
+            user-select: none;
+            transition: opacity 0.15s ease;
+        }
+        .global-loading-overlay.is-active {
+            display: flex;
+        }
+        .global-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: globalSpin 0.65s linear infinite;
+        }
+        @keyframes globalSpin {
+            to { transform: rotate(360deg); }
+        }
+        .global-loading-text {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            background: rgba(30, 34, 27, 0.88);
+            padding: 6px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            letter-spacing: 0.03em;
+        }
+
+        .prompt-box {
+            background: var(--card-bg-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 14px;
+        }
+        .prompt-textarea {
+            width: 100%;
+            height: 220px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            resize: vertical;
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-color);
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-label input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<!-- 全画面集計更新オーバーレイ -->
+<div class="global-loading-overlay" id="global-loading-overlay">
+    <div class="global-spinner"></div>
+    <span class="global-loading-text">集計を更新中...</span>
+</div>
+
+<!-- フローティング注意バナー -->
+<div class="notice-banner" id="multi-lens-notice">
+    ⚠️ 複数機材選択中: ズーム診断は合算参考値
+</div>
+
+<div class="container" id="main-container">
+    <div class="header">
+        <h1>
+            <img src="img/icon_analyzer.png" alt="アプリのアイコン" class="header-icon" onerror="this.outerHTML='📊';">
+            Octopus EXIF Analyzer
+        </h1>
+        <div class="header-controls">
+            <span class="version" id="version-display"></span>
+            <button class="wide-toggle-btn" id="wide-toggle-btn" title="画面の幅を最大2000pxに拡大します">⤢ ワイド表示</button>
+            <button class="theme-toggle" id="theme-btn" aria-label="テーマ切替">🌙</button>
+        </div>
+    </div>
+
+    <!-- 共通ナビゲーション -->
+    <nav id="global-nav"></nav>
+
+    <!-- ファイル・フォルダ投入エリア -->
+    <div class="drop-area" id="drop-area">
+        <p id="drop-title">ここにJPEG写真 または フォルダをドラッグ＆ドロップ</p>
+        <span id="limit-notice">JPEG (.jpg / .jpeg) 対応（PC: 最大3,000枚 / スマホ: 最大100枚）</span>
+        <div class="drop-time-notice">※大量の写真やフォルダを投入した場合、読み込み開始まで数秒〜十数秒かかる場合があります。</div>
+        
+        <div class="upload-actions">
+            <button type="button" class="upload-btn" id="btn-select-files">📷 ファイルを選択</button>
+            <button type="button" class="upload-btn" id="btn-select-folder">📁 フォルダごと選択</button>
+            <button type="button" class="upload-btn" id="btn-clear-data" style="display:none; color:var(--danger-color);">✖ 全てクリア</button>
+        </div>
+
+        <input type="file" id="file-input" accept="image/jpeg" multiple style="display: none;">
+        <input type="file" id="folder-input" webkitdirectory directory mozdirectory multiple style="display: none;">
+    </div>
+
+    <!-- 進捗バー -->
+    <div class="progress-box" id="progress-box">
+        <div class="progress-header">
+            <span id="progress-status-text">写真を解析中...</span>
+            <span id="progress-count-text">0 / 0</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- メイン分析ワークスペース -->
+    <div id="analyzer-workspace" style="display: none;">
+
+        <!-- 1. 機材選択 ＆ 換算設定エリア（常時表示パネル） -->
+        <div class="gear-control-panel">
+            <!-- 検出機材一覧（合体セレクター） -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <div class="section-header-block">
+                    <label class="section-title">◆ 検出機材一覧（カメラ ＆ レンズ組み合わせ選択）</label>
+                    <p class="section-desc">
+                        分析対象にしたい「カメラ ✕ レンズ」の組み合わせにチェックを入れてください。<br>
+                        複数チェックすると同一母集団として合算されます（※異なるズームレンズが混ざった場合、両端依存度の診断は安全のため自動的にスキップされます）。
+                    </p>
+                </div>
+                <div class="quick-btn-group">
+                    <button type="button" class="quick-btn" onclick="quickSelectPairs('all')">全選択</button>
+                    <button type="button" class="quick-btn" onclick="quickSelectPairs('none')">全解除</button>
+                    <button type="button" class="quick-btn" onclick="quickSelectPairs('invert')">選択反転</button>
+                    <button type="button" class="quick-btn" onclick="quickSelectPairs('unknown')">Unknownのみ</button>
+                </div>
+                <div class="gear-list" id="gear-pair-list"></div>
+            </div>
+
+            <hr style="border:none; border-top:1px dashed var(--border-color); margin:18px 0;">
+
+            <!-- カメラ・レンズ別 センサーサイズ設定 -->
+            <div class="form-group">
+                <div class="section-header-block">
+                    <label class="section-title">◆ カメラ・レンズ別 センサーサイズ設定（35mm判換算補完用）</label>
+                    <p class="section-desc">
+                        選択された機材のセンサーサイズ（クロップ係数）を確認・変更します。<br>
+                        写真のExifメタデータに「35mm換算焦点距離」が記録されている機材（スマホや一部ミラーレス等）は自動採用されるため、手動設定は不要です。
+                    </p>
+                </div>
+                <table class="setting-sub-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">カメラ / レンズ機種</th>
+                            <th>換算方式 / センサーサイズ / クロップ係数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="camera-crop-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- 画角基準 ＆ 両端独立トグル -->
+            <div style="background:var(--card-bg-sub); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:12px 16px; margin-top:16px;">
+                <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:13px; font-weight:700; color:var(--text-color);">画角基準:</span>
+                        <label style="font-size:13px; cursor:pointer;" title="センサーサイズを揃えて公平に画角を比較できます">
+                            <input type="radio" name="focal-mode" value="35mm" checked onchange="onFocalModeChange()"> 35mm判換算
+                        </label>
+                        <label style="font-size:13px; cursor:pointer;" title="レンズ本来の実ミリ数で集計します">
+                            <input type="radio" name="focal-mode" value="real" onchange="onFocalModeChange()"> 実焦点距離
+                        </label>
+                    </div>
+
+                    <label class="toggle-label" title="チェックを外すと、広角端・望遠端も通常の焦点域ブロックに統合されます">
+                        <input type="checkbox" id="isolate-endpoints-chk" checked onchange="onIsolateToggleChange()">
+                        <span>広角端・望遠端を通常ブロックから独立集計する</span>
+                    </label>
+                </div>
+                <p style="font-size:11.5px; color:var(--text-muted); margin-top:6px; margin-bottom:0;">
+                    ※ 異なるセンサーサイズ（フルサイズとMFTなど）の写真を混在して分析する場合は、「35mm判換算」の選択を推奨します。
+                </p>
+            </div>
+
+            <!-- アコーディオン：レンズ別 広角端・望遠端スペック微調整 -->
+            <div class="accordion" id="accordion-endpoints" style="margin-top: 20px; margin-bottom: 0;">
+                <div class="accordion-header" id="header-endpoints" onclick="toggleAccordion('content-endpoints-settings', this)">
+                    レンズ別 広角端・望遠端スペック微調整（ズーム診断用） <span id="arrow-endpoints">▼</span>
+                </div>
+                <div class="accordion-content" id="content-endpoints-settings">
+                    <p class="section-desc" style="margin-top:0; margin-bottom:10px;">
+                        ズームレンズの両端（最も広い画角・最も望遠の画角）のスペック数値です。Exifから自動判別されますが、必要に応じて手動で微調整できます（※単焦点やスマホは自動確定されロックされます）。
+                    </p>
+                    <table class="setting-sub-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45%;">レンズ機種</th>
+                                <th>広角端 (mm)</th>
+                                <th>望遠端 (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lens-endpoints-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. サマリーカードエリア -->
+        <div class="section-header-block" style="margin-bottom: 10px;">
+            <label class="section-title">◆ 撮影傾向サマリー診断</label>
+            <p class="section-desc">選択された写真群全体の母集団、ズーム両端への依存度、および最も多用されている露出パラメータの概要です。</p>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <span class="summary-title">分析対象写真</span>
+                <span class="summary-value" id="card-total-count">0 <span style="font-size:14px; font-weight:600;">枚</span></span>
+                <span class="summary-sub" id="card-total-sub">全0枚中</span>
+            </div>
+
+            <!-- ズーム両端活用診断カード（複数レンズ選択時はグレーアウト・スキップ） -->
+            <div class="summary-card accent-card" id="card-zoom-diagnostic">
+                <span class="summary-title">ズーム両端 活用診断</span>
+                <span class="summary-value" id="card-zoom-badge">-</span>
+                <span class="summary-sub" id="card-zoom-sub">中間域活用率: 0%</span>
+            </div>
+
+            <div class="summary-card">
+                <span class="summary-title">広角端・望遠端 比率</span>
+                <span class="summary-value" id="card-endpoints-ratio">0% / 0%</span>
+                <span class="summary-sub" id="card-endpoints-detail">ワイド: 0枚 / テレ: 0枚</span>
+            </div>
+
+            <div class="summary-card">
+                <span class="summary-title">最多露出設定</span>
+                <span class="summary-value" id="card-dom-exposure" style="font-size:18px;">-</span>
+                <span class="summary-sub" id="card-dom-exposure-sub">絞り・SS・ISO</span>
+            </div>
+        </div>
+
+        <!-- 3. グラフ可視化エリア -->
+        <div class="section-header-block" style="margin-bottom: 10px;">
+            <label class="section-title">◆ 撮影パラメータ可視化グラフ</label>
+            <p class="section-desc">焦点距離の分布や露出設定の傾向を視覚化したグラフです。上部のタブを切り替えて各パラメータの偏りを確認できます。</p>
+        </div>
+
+        <div class="chart-tabs">
+            <button type="button" class="chart-tab-btn active" data-tab="focal-blocks" onclick="switchChartTab('focal-blocks')">焦点域ブロック</button>
+            <button type="button" class="chart-tab-btn" data-tab="focal-detail" onclick="switchChartTab('focal-detail')">1mm刻み分布</button>
+            <button type="button" class="chart-tab-btn" data-tab="fnumber" onclick="switchChartTab('fnumber')">F値 (絞り)</button>
+            <button type="button" class="chart-tab-btn" data-tab="shutter" onclick="switchChartTab('shutter')">シャッター速度</button>
+            <button type="button" class="chart-tab-btn" data-tab="iso" onclick="switchChartTab('iso')">ISO感度</button>
+        </div>
+
+        <div class="chart-container-box" id="chart-container-box">
+            <canvas id="main-chart"></canvas>
+        </div>
+
+        <!-- 4. AIプロンプト生成エリア -->
+        <div class="prompt-box">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; flex-wrap:wrap;">
+                <div class="section-header-block" style="margin-bottom:0;">
+                    <label class="section-title">🤖 AI分析用プロンプト生成</label>
+                    <p class="section-desc" style="margin-bottom:0;">
+                        集計データをまとめたAI相談用テキストです。「📋 プロンプトをコピー」ボタンを押し、ChatGPTやClaude、Geminiなどの生成AIにそのまま貼り付けて送信してください。<br>
+                        あなたの構図の癖や、描写力向上のために買い足すべき「最適な単焦点レンズ」などの客観的な講評を受け取れます。
+                    </p>
+                </div>
+                <!-- 横幅固定＆中央揃えを適用したプロンプトコピーボタン -->
+                <button type="button" class="upload-btn" id="btn-copy-prompt" style="padding:6px 14px; font-size:12.5px; flex-shrink:0; min-width:176px; justify-content:center;">📋 プロンプトをコピー</button>
+            </div>
+            <textarea class="prompt-textarea" id="prompt-output" readonly></textarea>
+        </div>
+
+    </div>
+</div>
+
+<!-- 説明セクション -->
+<div class="explanation">
+    <div class="usage-section">
+        <h3> 本ツールについて</h3>
+        <p>・画像の読み込み、Exifメタデータの解析、焦点距離の動的補完、グラフ描画、プロンプト生成までのすべての処理はブラウザ内（ローカル環境）で完結します。<br>写真や画像データがサーバーへ送信されることは一切ありません。</p>
+        <p>・大量の写真から撮影傾向（焦点距離や露出の癖、ズーム両端の依存度）を高速集計し、ChatGPTやClaude、Geminiなどの生成AIにコピペして具体的な撮影講評やレンズ選びの相談を行えます。</p>
+
+        <h3> 使い方</h3>
+        <p>・枠内にJPEG写真をドラッグ＆ドロップするか、「ファイルを選択」「フォルダごと選択」からまとめて読み込みます（PCは最大3,000枚、スマホは最大100枚まで）。</p>
+        <p>・<strong>機材セレクター</strong>：検出された「カメラ ✕ レンズ」の組み合わせ一覧からチェックボックスで柔軟に複数選択・合算できます。異なるカメラやスマホのレンズが混同されることなく正確に集計可能です。</p>
+        <p>・<strong>35mm判換算補完</strong>：Exifに換算値が記録されている写真（スマホや一部ミラーレス等）は最優先で自動採用されます。一部のみ記録されている場合も実測比率から高精度に自動補完します。記録されていない機材のみ、センサーサイズ（MFT: ×2.0、APS-C: ×1.5/1.6等）を選んで正確に補完します。</p>
+        <p>・<strong>ズーム両端診断</strong>：単一のズーム域を持つレンズでは「広角端 [〇〇mm]」「望遠端 [〇〇mm]」として独立集計し、中間域が40%以上活用されているかを客観的に診断します。複数の異なるズーム域が合算された場合は誤認を防ぐため自動的に全域ブロック集計へ統合され、診断はスキップされます。</p>
+        <p>・<strong>AIプロンプト生成</strong>：集計結果を盛り込んだ分析プロンプトをワンクリックでクリップボードへコピーし、AIチャットに貼り付けてアドバイスを求められます。</p>
+
+        <h3> ライセンスについて</h3>
+        <p>・本ツールでは、オープンソースのライブラリを利用しています。著作権およびライセンスは各権利者に帰属します。</p>
+        <ul>
+            <li><a href="https://github.com/MikeKovarik/exifr" target="_blank" rel="noopener">exifr</a> (MIT License)</li>
+            <li><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> (MIT License)</li>
+        </ul>
+    </div>
+</div>
+
+<footer class="footer usage-section">
+    © 2026 <span class="copyright-name"><a href="https://note.com/octopus_yama" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">山下オクトパス</a>
+     ／ <a href="https://github.com/Octopus-yama/octopus_exifframe/blob/main/LICENSE" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">MIT License</a></span>
+</footer>
+
+<!-- ツール固有スクリプト -->
+<script src="js/exif-analyzer.js"></script>
+
+</body>
+</html>

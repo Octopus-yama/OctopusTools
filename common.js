@@ -1,24 +1,24 @@
 /**
  * Octopus Tools - 共通管理スクリプト
- * ・バージョンおよび更新内容の一元管理（メイン＋各ツール計6系統）
+ * ・バージョンおよび更新内容の一元管理（メイン＋各ツール計7系統）
  * ・グローバルナビゲーション自動生成
  * ・ダークモード（テーマ）切り替え＆永続化
  * ・PCワイド表示切り替え＆永続化
  * ・アコーディオン開閉制御
  */
-
+ 
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（キープ）
-    version: "1.32",
-    date: "2026-09-23",
-    updateNote: "「Octopus Mosaic & Blur」にクリップボード画像貼り付け機能およびショートカットキー対応を追加/GA4の追加",
+    // 1. メイン（共通）バージョン情報（v1.47へ更新）
+    version: "1.47",
+    date: "2026-09-24",
+    updateNote: "バージョンの更新／前ver：「EXIF View & Edit」のExifバイナリ保存エンジンを刷新（最新タグ・独自データの完全保持、型エラーによる保存クラッシュ根絶、一括DL進捗判定強化）",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
         index: {
             name: "TOP",
-            subVersion: "13",
-            updateNote: "「Octopus Photo Process」へのリンク・ツールカードを追加"
+            subVersion: "16",
+            updateNote: "Newの追加・並び替え／前ver：「Octopus EXIF Analyzer」のツールカード（概要・アイコン・リンク）をTOPページに正式追加"
         },
         exif: {
             name: "EXIF Frame",
@@ -37,25 +37,32 @@ const OCTOPUS_APP_INFO = {
         },
         viewedit: {
             name: "EXIF View & Edit",
-            subVersion: "23",
-            updateNote: "簡易モードにおける露出関連6項目（露出プログラム〜露出モード）の表示位置を「画像タイトル」の次へ移動"
+            subVersion: "24",
+            updateNote: "Exif保存時の動的型補完による最新タグ・メーカー独自データの完全保持（欠落ゼロ化）、undefinedキークラッシュ根絶、日本語文字列の安全パック、一括DLエラー判定の正確化"
         },
         photoprocess: {
             name: "Photo Process",
-            subVersion: "8",
-            updateNote: "境界スプリッターによる表示領域ドラッグ伸縮、リサイズ数値連動クロップ枠、全画面プレビュー表示、クリップボード画像直接コピーを実装"
+            subVersion: "9",
+            updateNote: "スライダー操作時のrAF描画間引きと、重処理実行時の操作保護オーバーレイ（GPUスピナー付き）を実装"
+        },
+        analyzer: {
+            name: "EXIF Analyzer",
+            subVersion: "14",
+            updateNote: "ファイルドロップエリアへ大量投入時の所要時間注記を追加し、フォルダ走査時の即時進捗表示フィードバックを強化"
         }
     }
 };
 
-// 共通ナビゲーション項目定義
+// 共通ナビゲーション項目定義（EXIF Analyzerを含む全7系統）
 const OCTOPUS_NAV_ITEMS = [
     { id: "index", name: "TOP", url: "index.html", icon: "🐙" },
     { id: "exif", name: "EXIF Frame", url: "ExifFrame.html", icon: "📷" },
-    { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
-    { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" },
     { id: "viewedit", name: "EXIF View & Edit", url: "ExifViewEdit.html", icon: "📝" },
-    { id: "photoprocess", name: "Photo Process", url: "PhotoProcess.html", icon: "🎨" }
+    { id: "analyzer", name: "EXIF Analyzer", url: "ExifAnalyzer.html", icon: "📊" },
+    { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
+    { id: "photoprocess", name: "Photo Process", url: "PhotoProcess.html", icon: "🎨" },
+    { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" }
+
 ];
 
 (function() {
@@ -64,6 +71,7 @@ const OCTOPUS_NAV_ITEMS = [
     // --------------------------------------------------
     function getCurrentPageKey() {
         const path = window.location.pathname.toLowerCase();
+        if (path.includes("exifanalyzer")) return "analyzer";
         if (path.includes("photoprocess")) return "photoprocess";
         if (path.includes("exifviewedit")) return "viewedit";
         if (path.includes("exifcleaner")) return "cleaner";
@@ -88,6 +96,7 @@ const OCTOPUS_NAV_ITEMS = [
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
             themeBtn.textContent = isDark ? '☀️' : '🌙';
+            window.dispatchEvent(new CustomEvent('octopus:themechange', { detail: { isDark } }));
         });
     }
 

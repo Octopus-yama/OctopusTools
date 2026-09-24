@@ -909,6 +909,55 @@
                 z-index: 100000 !important;
             }
         }
+/* 処理中操作保護オーバーレイ ＆ スピナー */
+        .process-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(2px);
+            z-index: 999999 !important;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            pointer-events: all;
+            user-select: none;
+        }
+        .process-overlay.open {
+            display: flex !important;
+        }
+
+        .process-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: processSpin 0.75s linear infinite;
+            will-change: transform;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        .process-msg {
+            color: #ffffff;
+            font-size: 13.5px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+            background: rgba(20, 24, 18, 0.75);
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes processSpin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1346,6 +1395,12 @@
             <button type="button" class="main-btn" id="btn-modal-confirm-export" style="margin-top:0; padding:8px 18px; width:auto;">書き出す</button>
         </div>
     </div>
+</div>
+
+<!-- 処理中操作保護オーバーレイ -->
+<div id="process-overlay" class="process-overlay">
+    <div class="process-spinner"></div>
+    <div class="process-msg" id="process-msg">処理中...</div>
 </div>
 
 <script src="js/photo-process.js"></script>
