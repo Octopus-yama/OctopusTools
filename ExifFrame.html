@@ -596,7 +596,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            gap: 10px; 
+            gap: 8px; 
             background: var(--card-bg-sub); 
             border: 1px solid var(--border-color); 
             padding: 12px; 
@@ -619,6 +619,7 @@
             cursor: pointer; 
             transition: transform 0.2s; 
             background: var(--card-bg); 
+            margin-bottom: 2px;
         }
         .result-thumb:hover { 
             transform: scale(1.04); 
@@ -627,16 +628,43 @@
             background: var(--primary); 
             color: white; 
             border: none; 
-            padding: 7px 14px; 
+            padding: 7px 12px; 
             font-size: 12px; 
             font-weight: 600; 
             border-radius: var(--radius-sm); 
             cursor: pointer; 
             transition: var(--transition); 
             width: 100%; 
+            box-sizing: border-box;
+            text-align: center;
         }
         .single-download-btn:hover { 
             background: var(--primary-hover); 
+        }
+
+        /* 各画像ごとのクリップボードコピーボタン */
+        .single-copy-btn { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-color); 
+            padding: 6px 10px; 
+            font-size: 9.8px; 
+            font-weight: 600; 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            transition: var(--transition); 
+            width: 100%; 
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .single-copy-btn:hover:not(:disabled) { 
+            border-color: var(--primary); 
+            background: var(--primary-light); 
+            color: var(--primary); 
+        }
+        .single-copy-btn:disabled { 
+            opacity: 0.65; 
+            cursor: default; 
         }
 
         /* ライトボックスモーダル */

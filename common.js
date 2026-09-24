@@ -8,10 +8,10 @@
  */
  
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（v1.47へ更新）
-    version: "1.47",
+    // 1. メイン（共通）バージョン情報（ルールA：v1.48へ更新）
+    version: "1.48",
     date: "2026-09-24",
-    updateNote: "バージョンの更新／前ver：「EXIF View & Edit」のExifバイナリ保存エンジンを刷新（最新タグ・独自データの完全保持、型エラーによる保存クラッシュ根絶、一括DL進捗判定強化）",
+    updateNote: "「Octopus EXIF Frame」の生成結果サムネイルに個別クリップボードコピー機能を追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
@@ -22,8 +22,8 @@ const OCTOPUS_APP_INFO = {
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "132",
-            updateNote: "ドロップエリアへのクリップボード画像貼り付けボタン設置（EXIF注意喚起付記）およびCtrl+V貼り付け対応"
+            subVersion: "133",
+            updateNote: "複数画像生成時も各サムネイル下から個別にクリップボードへ直接コピーできる「クリップボードにコピー」ボタンを追加"
         },
         mosaic: {
             name: "Mosaic & Blur",
@@ -62,7 +62,6 @@ const OCTOPUS_NAV_ITEMS = [
     { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
     { id: "photoprocess", name: "Photo Process", url: "PhotoProcess.html", icon: "🎨" },
     { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" }
-
 ];
 
 (function() {
