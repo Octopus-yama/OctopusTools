@@ -892,14 +892,14 @@
             }
 
             .panel-content {
-                padding-right: 52px !important;
+                padding-right: 32px !important; /* バー20px ＋ 隙間12pxで今の余白感をキープ */
                 padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
                 overflow-y: scroll !important;
                 scrollbar-width: auto;
                 scrollbar-color: var(--primary) var(--card-bg-sub);
             }
             .panel-content::-webkit-scrollbar {
-                width: 42px !important;
+                width: 20px !important; /* 42pxから半分（約20px）に変更 */
                 display: block !important;
                 background-color: var(--card-bg-sub);
             }
@@ -909,15 +909,14 @@
             }
             .panel-content::-webkit-scrollbar-thumb {
                 background-color: var(--primary);
-                border-radius: 12px;
-                border: 8px solid var(--card-bg-sub);
+                border-radius: 10px;
+                border: 4px solid var(--card-bg-sub); /* 幅に合わせて枠線もバランス調整 */
                 min-height: 50px;
             }
             .panel-content::-webkit-scrollbar-thumb:hover,
             .panel-content::-webkit-scrollbar-thumb:active {
                 background-color: var(--primary-hover);
             }
-
             /* iOS実機専用スタイル */
             body.is-ios .panel-footer {
                 padding-bottom: calc(36px + env(safe-area-inset-bottom, 16px)) !important;
