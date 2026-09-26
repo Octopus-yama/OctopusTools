@@ -1,15 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NYCV0Y514R"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
 
-      gtag('config', 'G-NYCV0Y514R');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Octopus EXIF View & Edit｜Octopus Tools</title>
@@ -65,6 +57,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
         .mode-badge-btn {
             background: var(--card-bg-sub);
@@ -81,6 +74,20 @@
             background: var(--primary);
             color: #ffffff;
             border-color: var(--primary);
+        }
+
+        /* モバイル端末GPS保護検知バッジ */
+        .gps-notice-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            background: var(--card-bg-sub);
+            border: 1px dashed var(--border-color);
+            padding: 4px 9px;
+            border-radius: var(--radius-sm);
+            line-height: 1.35;
         }
 
         /* 下段：ツールバー */
@@ -528,6 +535,11 @@
             <div class="mode-btn-group">
                 <button type="button" class="mode-badge-btn active" id="btn-mode-simple">簡易モード</button>
                 <button type="button" class="mode-badge-btn" id="btn-mode-detail">詳細モード</button>
+                
+                <!-- モバイル環境向けGPS保護検知バッジ（該当時のみ動的表示） -->
+                <span id="gps-notice-badge" class="gps-notice-badge" style="display: none;" title="AndroidやiOSの標準写真選択画面（Photo Picker）のプライバシー保護機能により、ブラウザへ渡される際にGPS位置情報が自動的に消去されている可能性があります。">
+                    📱 端末の保護機能により位置情報が除外されている可能性があります
+                </span>
             </div>
             <span id="edit-count-badge" style="font-size: 12px; font-weight: 700;"></span>
         </div>
@@ -625,6 +637,10 @@
         <p>・Exifの値を1箇所以上編集すると、下部の「一括ダウンロードする」ボタンが押せるようになり、全写真をまとめてダウンロードできます（iOS環境は各行のボタンから保存してください）。</p>
         <p>・PC環境では、表の右下をマウスでドラッグして<strong>縦の表示サイズを自由に変更</strong>できます。上部の「⤡ 縦を広げる」ボタンで一撃で画面いっぱいに拡大も可能です。</p>
         <p>・「文字：標準・小・極小」ボタンを押すと、文字サイズと行間をコンパクトに圧縮し、一覧性を高めて一度に多くの写真を俯瞰できます。</p>
+
+        <h3> スマートフォン・アプリでのご利用について</h3>
+        <p>・AndroidやiOSの端末から写真を選択・アップロードする際、<strong>OS標準の写真選択ピッカー（Photo Picker）のプライバシー保護機能によって、位置情報（GPS緯度・経度）が自動的に消去された状態でブラウザに渡される場合があります</strong>。</p>
+        <p>・この機能が働いた場合、端末内の写真自体にはGPSが残っていても、ブラウザ上には位置情報が「-（未設定）」として読み込まれます。位置情報を維持・編集したい場合は、PCから読み込むか、端末側の写真共有設定をご確認ください。</p>
 
         <h3> ライセンスについて</h3>
         <p>・本ツールでは、オープンソースのライブラリを利用しています。著作権およびライセンスは各権利者に帰属します。</p>

@@ -7,7 +7,6 @@
  * ・アコーディオン開閉制御
  */
  
-
 // ==========================================
 // Web用 GA4 自動判定・配信スクリプト
 // ==========================================
@@ -36,12 +35,11 @@
 
 // ==========================================
 
-
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（v1.61へ更新）
-    version: "1.61",
+    // 1. メイン（共通）バージョン情報
+    version: "1.62",
     date: "2026-09-26",
-    updateNote: "「Octopus Photo Process」のスマートフォン・ポップアップ表示切替時のビューポート縦幅追従強化およびスプリット比較のタッチ操作対応",
+    updateNote: "「EXIF View & Edit」にモバイル端末の保護機能によるGPS除外を検知する動的注記バッジおよび説明を追加",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
@@ -52,13 +50,13 @@ const OCTOPUS_APP_INFO = {
         },
         exif: {
             name: "EXIF Frame",
-            subVersion: "133",
-            updateNote: "複数画像生成時も各サムネイル下から個別にクリップボードへ直接コピーできる「クリップボードにコピー」ボタンを追加"
+            subVersion: "134",
+            updateNote: "モバイル・アプリ環境におけるクリップボードコピー処理のSNS最適化（長辺2048px自動リサイズ分岐）を追加し処理速度を大幅改善"
         },
         mosaic: {
             name: "Mosaic & Blur",
-            subVersion: "116",
-            updateNote: "「画像をクリップボードにコピー」ボタンを追加（ファイル保存を介さない直接コピーに対応）"
+            subVersion: "117",
+            updateNote: "モバイル・アプリ環境におけるクリップボードコピー処理のSNS最適化（長辺2048px自動リサイズ分岐）を追加し処理速度を大幅改善"
         },
         cleaner: {
             name: "EXIF Cleaner",
@@ -67,13 +65,13 @@ const OCTOPUS_APP_INFO = {
         },
         viewedit: {
             name: "EXIF View & Edit",
-            subVersion: "24",
-            updateNote: "Exif保存時の動的型補完による最新タグ・メーカー独自データの完全保持（欠落ゼロ化）、undefinedキークラッシュ根絶、日本語文字列の安全パック、一括DLエラー判定の正確化"
+            subVersion: "27",
+            updateNote: "モバイル・アプリ環境における端末保護機能（Photo Picker）によるGPS除外検知バッジを詳細モード右隣に設置、説明欄に注意事項を追記"
         },
         photoprocess: {
             name: "Photo Process",
-            subVersion: "10",
-            updateNote: "スマホ・ポップアップ表示切替時のビューポート縦幅追従強化（ステージ比率維持＆マルチリサイズ同期）およびスプリット比較バーのタッチ対応"
+            subVersion: "11",
+            updateNote: "モバイル・アプリ環境におけるクリップボードコピー処理のSNS最適化（長辺2048px自動リサイズ分岐）を追加し処理速度を大幅改善"
         },
         analyzer: {
             name: "EXIF Analyzer",
@@ -210,14 +208,12 @@ function getToolMaxFiles(toolId) {
   const item = OCTOPUS_NAV_ITEMS.find(t => t.id === toolId);
   if (!item) return 1;
 
-  // アプリ環境、またはモバイルブラウザ判定
   const isMobile = !!window.AndroidBridge || 
                    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
                    (window.innerWidth <= 768);
 
   return isMobile ? item.maxFilesMobile : item.maxFilesPC;
 }
-
 
 (function() {
     // --------------------------------------------------
