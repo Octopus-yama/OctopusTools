@@ -7,11 +7,41 @@
  * ・アコーディオン開閉制御
  */
  
+
+// ==========================================
+// Web用 GA4 自動判定・配信スクリプト
+// ==========================================
+(function() {
+  // アプリ（AndroidBridgeが存在する）環境の場合はWeb用GAを読み込まず終了
+  if (window.AndroidBridge) {
+    return;
+  }
+
+  // ここから下はWebブラウザで開かれた時だけ実行される
+  const GA_MEASUREMENT_ID = 'G-NYCV0Y514R';
+
+  // gtag.js の動的読み込み
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_MEASUREMENT_ID;
+  document.head.appendChild(script);
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = gtag;
+
+  gtag('js', new Date());
+  gtag('config', GA_MEASUREMENT_ID);
+})();
+
+// ==========================================
+
+
 const OCTOPUS_APP_INFO = {
-    // 1. メイン（共通）バージョン情報（ルールA：v1.48へ更新）
-    version: "1.48",
-    date: "2026-09-24",
-    updateNote: "「Octopus EXIF Frame」の生成結果サムネイルに個別クリップボードコピー機能を追加",
+    // 1. メイン（共通）バージョン情報（v1.61へ更新）
+    version: "1.61",
+    date: "2026-09-26",
+    updateNote: "「Octopus Photo Process」のスマートフォン・ポップアップ表示切替時のビューポート縦幅追従強化およびスプリット比較のタッチ操作対応",
 
     // 2. 各ツールの個別サブバージョン・更新内容
     tools: {
@@ -42,27 +72,152 @@ const OCTOPUS_APP_INFO = {
         },
         photoprocess: {
             name: "Photo Process",
-            subVersion: "9",
-            updateNote: "スライダー操作時のrAF描画間引きと、重処理実行時の操作保護オーバーレイ（GPUスピナー付き）を実装"
+            subVersion: "10",
+            updateNote: "スマホ・ポップアップ表示切替時のビューポート縦幅追従強化（ステージ比率維持＆マルチリサイズ同期）およびスプリット比較バーのタッチ対応"
         },
         analyzer: {
             name: "EXIF Analyzer",
-            subVersion: "14",
-            updateNote: "ファイルドロップエリアへ大量投入時の所要時間注記を追加し、フォルダ走査時の即時進捗表示フィードバックを強化"
+            subVersion: "16",
+            updateNote: "検出機材一覧および各設定テーブル・プロンプトの機材リストを撮影枚数順（降順）に自動ソートするようUI改善"
         }
     }
 };
 
-// 共通ナビゲーション項目定義（EXIF Analyzerを含む全7系統）
+// ==========================================
+// ツール定義ナビゲーションリスト（PC / SP 分離版）
+// ==========================================
 const OCTOPUS_NAV_ITEMS = [
-    { id: "index", name: "TOP", url: "index.html", icon: "🐙" },
-    { id: "exif", name: "EXIF Frame", url: "ExifFrame.html", icon: "📷" },
-    { id: "viewedit", name: "EXIF View & Edit", url: "ExifViewEdit.html", icon: "📝" },
-    { id: "analyzer", name: "EXIF Analyzer", url: "ExifAnalyzer.html", icon: "📊" },
-    { id: "mosaic", name: "Mosaic & Blur", url: "MosaicBlur.html", icon: "🧩" },
-    { id: "photoprocess", name: "Photo Process", url: "PhotoProcess.html", icon: "🎨" },
-    { id: "cleaner", name: "EXIF Cleaner", url: "ExifCleaner.html", icon: "🧹" }
+  {
+    id: "index",
+    name: "TOP",
+    tabName: "TOPページ",
+    url: "index.html",
+    icon: "🐙",
+    iconImage: "img/icon_Octopus_丸.png",
+    order: 0,
+    showInTab: false,
+    showInOther: false,
+    maxFilesPC: 0,
+    maxFilesMobile: 0,
+    isSingleOnly: false
+  },
+  {
+    id: "exif",
+    name: "EXIFフレーム",
+    tabName: "フレーム",
+    url: "ExifFrame.html",
+    icon: "🖼️",
+    iconImage: "img/Exif_Frame_Tool_icon.png",
+    order: 10,
+    showInTab: true,
+    showInOther: false,
+    maxFilesPC: 20,
+    maxFilesMobile: 20,
+    isSingleOnly: false
+  },
+  {
+    id: "viewedit",
+    name: "EXIF編集",
+    tabName: "編集",
+    url: "ExifViewEdit.html",
+    icon: "📋",
+    iconImage: "img/icon_view_edit.png",
+    order: 20,
+    showInTab: true,
+    showInOther: false,
+    maxFilesPC: 50,
+    maxFilesMobile: 10,
+    isSingleOnly: false
+  },
+  {
+    id: "analyzer",
+    name: "EXIF分析",
+    tabName: "分析",
+    url: "ExifAnalyzer.html",
+    icon: "📊",
+    iconImage: "img/icon_analyzer.png",
+    order: 30,
+    showInTab: true,
+    showInOther: false,
+    maxFilesPC: 3000,
+    maxFilesMobile: 100,
+    isSingleOnly: false
+  },
+  {
+    id: "mosaic",
+    name: "モザイク & ぼかし",
+    tabName: "モザイク",
+    url: "MosaicBlur.html",
+    icon: "🎭",
+    iconImage: "img/Mosaic_Blur_Tool_icon.png",
+    order: 40,
+    showInTab: true,
+    showInOther: false,
+    maxFilesPC: 1,
+    maxFilesMobile: 1,
+    isSingleOnly: true
+  },
+  {
+    id: "photoprocess",
+    name: "写真加工",
+    tabName: "写真加工",
+    url: "PhotoProcess.html",
+    icon: "🎨",
+    iconImage: "img/ico_photo_Process.png",
+    order: 50,
+    showInTab: false,
+    showInOther: true,
+    maxFilesPC: 1,
+    maxFilesMobile: 1,
+    isSingleOnly: true
+  },
+  {
+    id: "cleaner",
+    name: "EXIFクリーナー",
+    tabName: "消去",
+    url: "ExifCleaner.html",
+    icon: "🧹",
+    iconImage: "img/icon_cleaner.png",
+    order: 60,
+    showInTab: false,
+    showInOther: true,
+    maxFilesPC: 100,
+    maxFilesMobile: 30,
+    isSingleOnly: false
+  },
+  {
+    id: "menu",
+    name: "メニュー・設定",
+    tabName: "メニュー",
+    url: "app/Menu.html",
+    icon: "⚙️",
+    iconImage: "",
+    order: 999,
+    showInTab: true,
+    showInOther: false,
+    maxFilesPC: 0,
+    maxFilesMobile: 0,
+    isSingleOnly: false
+  }
 ];
+
+/**
+ * 実行環境（PCブラウザ vs モバイルブラウザ/アプリ）に応じたツールの最大受入枚数を取得する
+ * @param {string} toolId
+ * @returns {number}
+ */
+function getToolMaxFiles(toolId) {
+  const item = OCTOPUS_NAV_ITEMS.find(t => t.id === toolId);
+  if (!item) return 1;
+
+  // アプリ環境、またはモバイルブラウザ判定
+  const isMobile = !!window.AndroidBridge || 
+                   /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768);
+
+  return isMobile ? item.maxFilesMobile : item.maxFilesPC;
+}
+
 
 (function() {
     // --------------------------------------------------
@@ -164,15 +319,18 @@ const OCTOPUS_NAV_ITEMS = [
             }
         }
 
-        // 2. 共通グローバルナビゲーションの自動生成
+        // 2. 共通グローバルナビゲーションの自動生成（メニュー除外 ＆ order順ソート）
         const navContainer = document.getElementById("global-nav");
         if (navContainer) {
             navContainer.className = "global-nav";
             navContainer.setAttribute("aria-label", "ツール切り替え");
-            navContainer.innerHTML = OCTOPUS_NAV_ITEMS.map(item => {
-                const isActive = item.id === currentKey ? " active" : "";
-                return `<a href="${item.url}" class="nav-item${isActive}"><span>${item.icon}</span> ${item.name}</a>`;
-            }).join("");
+            navContainer.innerHTML = OCTOPUS_NAV_ITEMS
+                .filter(item => item.id !== "menu")
+                .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+                .map(item => {
+                    const isActive = item.id === currentKey ? " active" : "";
+                    return `<a href="${item.url}" class="nav-item${isActive}"><span>${item.icon}</span> ${item.name}</a>`;
+                }).join("");
         }
 
         // 3. テーマ切り替えボタンの初期化

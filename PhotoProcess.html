@@ -276,12 +276,13 @@
             pointer-events: none;
         }
 
-        .split-bar {
+.split-bar {
             position: absolute;
             background: #ffffff;
             z-index: 10;
             box-shadow: 0 0 8px rgba(0,0,0,0.8);
             display: none;
+            touch-action: none;
         }
         .split-bar.vertical {
             top: 0;
@@ -289,11 +290,29 @@
             width: 2px;
             cursor: ew-resize;
         }
+        .split-bar.vertical::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -18px;
+            width: 38px;
+            pointer-events: auto;
+        }
         .split-bar.horizontal {
             left: 0;
             right: 0;
             height: 2px;
             cursor: ns-resize;
+        }
+        .split-bar.horizontal::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: -18px;
+            height: 38px;
+            pointer-events: auto;
         }
         .split-handle {
             position: absolute;
@@ -312,6 +331,8 @@
             font-size: 11px;
             color: var(--primary);
             font-weight: bold;
+            touch-action: none;
+            z-index: 2;
         }
 
         .crop-overlay {
